@@ -91,6 +91,20 @@ a{color:var(--sage);text-decoration:none}.hide{display:none!important}
 .footer{border-top:1px solid var(--line);font-size:12px;color:#99a59b;text-align:center;padding:23px 0 40px}
 @media(max-width:1000px){.categories{grid-template-columns:repeat(3,minmax(0,1fr))}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.rec-layout{grid-template-columns:1fr}}
 @media(max-width:650px){.wrap,.topbar-inner{width:calc(100% - 28px)}.topbar-inner{min-height:60px}.site-logo{font-size:16px}.topnote{display:none}.homeLanding{padding-top:20px}.hero{padding:27px 24px}.hero h1{font-size:37px}.hero p{font-size:13px}.home-heading{margin-top:25px}.categories{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.category{min-height:143px;padding:14px;gap:7px}.cat-art{width:39px;height:39px;font-size:23px;border-radius:12px}.category b{font-size:14px}.category small{font-size:11px}.detail{padding-top:25px}.detail-head h2{font-size:27px}.detail-head p{font-size:12px}.homebtn{padding:9px 12px;font-size:11px}.toolbar{padding:10px}.cards,.location-grid,.month-detail,.fruit-prep-grid,.prep-list,.guide-steps{grid-template-columns:1fr}.visual{aspect-ratio:1.7}.map-shell{padding:12px}.map-heading{display:block}.map-heading small{display:block;margin-top:5px}.sg-map-svg{min-height:190px}.map-switch{gap:5px}.map-switch button{padding:7px 10px;font-size:11px}.location{padding:13px}.place-thumb{width:70px;flex-basis:70px;height:85px}.planner-frame{height:1720px}}
+
+.outing-ages{border:1px solid #e2eae2;border-radius:18px;padding:17px 18px;margin:14px 0 18px;background:linear-gradient(120deg,#f4faf5,#fffdf9)}
+.outing-ages-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.outing-ages-top strong{display:block;font-size:16px;font-weight:800;color:#365c46}
+.outing-ages-top small{display:block;font-size:12px;color:#7c8980;margin-top:3px}
+.age-control{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:750}
+.age-control select{background:#fff;border:1px solid #cadbd0;color:#34543d;border-radius:10px;padding:9px 10px;min-width:110px;font-weight:800}
+.age-quick{display:flex;flex-wrap:wrap;gap:7px;margin:13px 0 0}
+.age-quick button{border:1px solid #d6e6d9;background:#fff;border-radius:12px;padding:8px 13px;color:#66816c;font-size:13px;font-weight:800}
+.age-quick button.on{background:#496f59;color:white;border-color:#496f59}
+.age-hint{margin-top:10px;color:#7e8b80;font-size:11px;line-height:1.5}
+.age-badge{display:inline-flex;align-items:center;gap:4px;border-radius:9px;background:#e4f2e6;border:1px solid #d1e6d6;color:#406d4d;font-size:12px;font-weight:800;padding:5px 8px;margin:6px 0}
+.age-badge.bad{background:#f6eee9;border-color:#f0e1d8;color:#946450}
+@media(max-width:650px){.outing-ages{padding:13px}.age-quick button{padding:7px 10px}.age-control{width:100%;justify-content:space-between}.age-control select{flex:1}}
 </style>
 </head>
 <body>
@@ -108,7 +122,12 @@ a{color:var(--sage);text-decoration:none}.hide{display:none!important}
  <div id="toolbar" class="toolbar"></div>
  <div id="outings" class="outing-layout hide">
    <div class="map-shell"><div class="map-heading"><h3>어디로 나들이 갈까요?</h3><small>지도를 누르면 지역별 장소가 표시돼요</small></div>
-      <div id="map" class="map"><svg class="sg-map-svg" viewBox="0 0 650 320" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="싱가포르 권역 선택 지도">
+      <div class="outing-ages" aria-label="아이 월령에 맞는 장소 찾기">
+ <div class="outing-ages-top"><div><strong>👶 우리 아기 월령으로 찾기</strong><small>아이가 즐기기 좋은 나들이 장소를 골라보세요.</small></div>
+ <label class="age-control">월령 <select id="outingMonth" aria-label="아이 월령 선택"><option value="all">전체 월령</option><option value="0">0M</option><option value="1">1M</option><option value="2">2M</option><option value="3">3M</option><option value="4">4M</option><option value="5">5M</option><option value="6">6M</option><option value="7">7M</option><option value="8">8M</option><option value="9">9M</option><option value="10">10M</option><option value="11">11M</option><option value="12">12M</option><option value="13">13M</option><option value="14">14M</option><option value="15">15M</option><option value="16">16M</option><option value="17">17M</option><option value="18">18M</option><option value="19">19M</option><option value="20">20M</option><option value="21">21M</option><option value="22">22M</option><option value="23">23M</option><option value="24">24M</option><option value="25">25M</option><option value="26">26M</option><option value="27">27M</option><option value="28">28M</option><option value="29">29M</option><option value="30">30M</option><option value="31">31M</option><option value="32">32M</option><option value="33">33M</option><option value="34">34M</option><option value="35">35M</option><option value="36">36M</option><option value="37">37M</option><option value="38">38M</option><option value="39">39M</option><option value="40">40M</option><option value="41">41M</option><option value="42">42M</option><option value="43">43M</option><option value="44">44M</option><option value="45">45M</option><option value="46">46M</option><option value="47">47M</option><option value="48">48M</option></select></label></div>
+ <div class="age-quick" id="outingAgeQuick"><button type="button" data-month="all" class="on">전체</button><button type="button" data-month="6">6M</button><button type="button" data-month="12">12M</button><button type="button" data-month="18">18M</button><button type="button" data-month="24">24M</button><button type="button" data-month="36">36M</button></div>
+ <div class="age-hint" id="outingAgeMessage">장소별 추천 월령을 확인해 보세요. * 입장 가능 연령과는 다를 수 있습니다.</div>
+ </div><div id="map" class="map"><svg class="sg-map-svg" viewBox="0 0 650 320" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="싱가포르 권역 선택 지도">
 <rect width="650" height="320" rx="20" fill="#f1f7f5"/>
 <path d="M0 265 Q155 235 300 276 T650 260V320H0Z" fill="#e5f1ef" opacity=".75"/>
 <circle cx="46" cy="55" r="19" fill="#d6e8de" opacity=".65"/><circle cx="602" cy="60" r="23" fill="#d9e9de" opacity=".7"/>
@@ -159,13 +178,13 @@ const categories=[
 {id:'recommendations',name:'추천 나누기',icon:'💌',sub:'제품 · 장소 · 경험 공유',desc:'육아 추천을 함께 모으는 공간'}];
 const labels={all:'전체', '0-6m':'0–6개월','6-12m':'6–12개월','12-24m':'12–24개월','24m+':'24개월 이상',parents:'부모/공통'};
 const regionNames={All:'전체 지역',Central:'Central',East:'East',West:'West',North:'North',South:'South',Unknown:'기타'};
-const state={category:null,sub:'전체',age:'all',region:'All',kind:'전체',search:'',rating:'전체'};let map=null,markerLayer=null;
+const state={category:null,sub:'전체',age:'all',outingMonth:null,region:'All',kind:'전체',search:'',rating:'전체'};let map=null,markerLayer=null;
 const $=(s)=>document.querySelector(s);const e=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function mountCats(){ $('#categories').innerHTML=categories.map(x=>`<button class="category ${state.category===x.id?'selected':''}" data-cat="${x.id}"><span class="cat-art">${x.icon}</span><b>${e(x.name)}</b><small>${e(x.sub)}</small></button>`).join('');document.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>openCategory(b.dataset.cat));}
-function openCategory(id){const cat=categories.find(c=>c.id===id);if(!cat)return;Object.assign(state,{category:id,sub:'전체',age:'all',region:'All',kind:'전체',search:'',rating:'전체'});history.replaceState(null,'','#'+id);$('#homeLanding').classList.add('hide');$('#topHome').classList.add('visible');$('#sectionTitle').textContent=cat.name;$('#sectionDescription').textContent=cat.desc;$('#detail').classList.add('visible');render();window.scrollTo({top:0,behavior:'smooth'});}
+function openCategory(id){const cat=categories.find(c=>c.id===id);if(!cat)return;Object.assign(state,{category:id,sub:'전체',age:'all',outingMonth:null,region:'All',kind:'전체',search:'',rating:'전체'});history.replaceState(null,'','#'+id);$('#homeLanding').classList.add('hide');$('#topHome').classList.add('visible');$('#sectionTitle').textContent=cat.name;$('#sectionDescription').textContent=cat.desc;$('#detail').classList.add('visible');render();window.scrollTo({top:0,behavior:'smooth'});}
 function returnHome(){state.category=null;history.replaceState(null,'',location.pathname);$('#detail').classList.remove('visible');$('#homeLanding').classList.remove('hide');$('#topHome').classList.remove('visible');window.scrollTo({top:0,behavior:'smooth'})}$('#backHome').onclick=returnHome;$('#topHome').onclick=returnHome;$('#brandHome').addEventListener('click',ev=>{ev.preventDefault();returnHome()});
 function getSubset(){return DATA.records.filter(x=>x.category===state.category)}
-function ageMatch(x){if(state.age==='all'||state.age==='parents')return true;if(x.category==='outing'){const max={'0-6m':5,'6-12m':11,'12-24m':23,'24m+':90}[state.age];return (x.minAge??0)<=max}return (x.age||[]).includes(state.age)}
+function ageMatch(x){if(x.category==='outing')return state.outingMonth===null||(x.minAge??0)<=state.outingMonth;if(state.age==='all'||state.age==='parents')return true;return (x.age||[]).includes(state.age)}
 function filterRecords(){return getSubset().filter(x=>{let needle=(x.title+' '+x.desc+' '+x.review+' '+x.sub+' '+(x.address||'')).toLowerCase();return (state.sub==='전체'||x.sub===state.sub)&&ageMatch(x)&&(state.region==='All'||x.region===state.region)&&(state.kind==='전체'||x.kind===state.kind)&&(state.rating==='전체'||x.status===state.rating)&&(!state.search||needle.includes(state.search.toLowerCase()))})}
 function imageMarkup(x){return x.photo?`<img src="${e(x.photo)}" alt="${e(x.title)} 제품 또는 장소 사진" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><div class="fallback" style="display:none">${x.icon||'🧸'}<span>이미지 준비 중</span></div>`:`<div class="fallback">${x.icon||'🧸'}<span>이미지 준비 중</span></div>`}
 
@@ -183,7 +202,7 @@ function cardHTML(x){
 
 function renderToolbar(){
  const c=state.category;let bits=['<input id="search" class="search" type="search" placeholder="이 카테고리에서 검색" aria-label="검색">'];
- if(['grocery','gear','outing','clinic','preschool','medicine'].includes(c))
+ if(['grocery','gear','clinic','preschool','medicine'].includes(c))
    bits.push('<select id="age" aria-label="월령">'+Object.entries(labels).map(([v,n])=>'<option value="'+v+'" '+(state.age===v?'selected':'')+'>'+n+'</option>').join('')+'</select>');
  if(c==='outing')
    bits.push('<select id="rating" aria-label="추천/비추천"><option value="전체">추천 · 비추천 모두</option><option value="good" '+(state.rating==='good'?'selected':'')+'>추천 장소</option><option value="bad" '+(state.rating==='bad'?'selected':'')+'>비추천 후기</option></select>');
@@ -214,7 +233,18 @@ function renderPlaces(){
  const entries=filterRecords(),mapped=entries.filter(x=>x.lat!=null&&x.lng!=null),other=entries.filter(x=>x.lat==null||x.lng==null);
  $('#locations').innerHTML=[...mapped.map((x,i)=>locationHTML(x,i+1)),...other.map(x=>locationHTML(x,null))].join('')||'<div class="empty">선택하신 조건에 맞는 장소가 없습니다. 지역이나 월령을 바꿔보세요.</div>';
  const zone=state.region;
- $('#regionResultLabel').textContent=(zone==='All'?'전체 지역':zone)+' · '+entries.length+'곳';
+ const selectMonth=$('#outingMonth');if(selectMonth){
+  selectMonth.value=state.outingMonth===null?'all':String(state.outingMonth);
+  selectMonth.onchange=event=>{const v=event.target.value;state.outingMonth=v==='all'?null:Number(v);renderPlaces();};
+ }
+ document.querySelectorAll('#outingAgeQuick [data-month]').forEach(btn=>{
+  const val=btn.dataset.month;
+  btn.classList.toggle('on',val===(state.outingMonth===null?'all':String(state.outingMonth)));
+  btn.onclick=()=>{state.outingMonth=val==='all'?null:Number(val);renderPlaces();};
+ });
+ const ageMessage=$('#outingAgeMessage');
+ if(ageMessage)ageMessage.textContent=state.outingMonth===null?'장소별 추천 월령을 확인해 보세요. * 입장 가능 연령과 다를 수 있습니다.':state.outingMonth+'M 아기를 기준으로 추천 장소를 보여드려요. * 실제 입장 가능 연령은 시설마다 확인해 주세요.';
+ $('#regionResultLabel').textContent=(zone==='All'?'전체 지역':zone)+(state.outingMonth===null?'':' · '+state.outingMonth+'M')+' · '+entries.length+'곳';
  document.querySelectorAll('.map-region').forEach(el=>{
    el.classList.toggle('is-muted',zone!=='All'&&el.dataset.zone!==zone);
    el.classList.toggle('is-active',zone!=='All'&&el.dataset.zone===zone);
@@ -232,12 +262,13 @@ function renderPlaces(){
 
 
 function locationHTML(x,n){
+const ageLabel='<span class="age-badge '+(x.status==='bad'?'bad':'')+'">👶 '+(x.status==='bad'?'월령 참고 ':'추천 월령 ')+(x.minAge??0)+'M+</span>';
  const address=x.address||'위치는 상세 안내에서 확인하세요';
  const summary=x.desc||x.review||'방문 경험을 참고해 보세요';
  const review=x.review?'<details class="review-fold"><summary>방문 후기 보기</summary><div class="review">'+e(x.review)+'</div></details>':'';
  const links=(x.url?'<a href="'+e(x.url)+'" target="_blank" rel="noopener noreferrer">시설 안내 ↗</a>':'')+(n?'<a href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(x.title+', '+address)+'" target="_blank" rel="noopener noreferrer">길찾기 ↗</a>':'');
  const photo=x.photo?'<img class="place-thumb" src="'+e(x.photo)+'" loading="lazy" alt="'+e(x.title)+' 사진" onerror="this.remove()">':'';
- return '<article class="location"><span class="num '+(x.status==='bad'?'bad':'')+'">'+(n||'—')+'</span><div class="location-body"><h3>'+e(x.title)+'</h3><div class="meta">'+e(regionNames[x.region]||x.region)+' · '+e(x.kind||'장소')+' · '+(x.minAge||0)+'M+ '+(x.status==='bad'?'· 비추천 의견':'')+'</div><div class="short">'+e(summary)+'</div>'+review+'<p>'+e(address)+'</p><div class="location-links">'+links+'</div></div>'+photo+'</article>';
+ return '<article class="location"><span class="num '+(x.status==='bad'?'bad':'')+'">'+(n||'—')+'</span><div class="location-body"><h3>'+e(x.title)+'</h3><div class="meta">'+e(regionNames[x.region]||x.region)+' · '+e(x.kind||'장소')+(x.status==='bad'?' · 비추천 의견':'')+'</div>'+ageLabel+'<div class="short">'+e(summary)+'</div>'+review+'<p>'+e(address)+'</p><div class="location-links">'+links+'</div></div>'+photo+'</article>';
 }
 
 const MONTHLY_FRUITS={
