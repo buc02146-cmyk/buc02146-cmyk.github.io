@@ -29,8 +29,9 @@ export default {async fetch(req,env){
   const playdateDelete=url.pathname.match(/^\/api\/playdates\/([0-9a-fA-F-]{36})$/);
   const summaryPath=url.pathname==="/api/review-summary";
   const recentPath=url.pathname==="/api/recent-reviews";
+  const searchPath=url.pathname==="/api/search";
   const photoGet=url.pathname.match(/^\/api\/review-photos\/([0-9a-fA-F-]{36})$/);
-  if(!deleteMatch&&!productDelete&&!productPath&&!visitorPath&&!playdatePath&&!playdateDelete&&!summaryPath&&!recentPath&&!photoGet&&url.pathname!=="/api/recommendations"&&!isHealth)return env.ASSETS.fetch(req);
+  if(!deleteMatch&&!productDelete&&!productPath&&!visitorPath&&!playdatePath&&!playdateDelete&&!summaryPath&&!recentPath&&!searchPath&&!photoGet&&url.pathname!=="/api/recommendations"&&!isHealth)return env.ASSETS.fetch(req);
   if((deleteMatch||productDelete||playdateDelete)&&req.method!=="DELETE")return reply({error:"허용되지 않은 요청입니다."},405);
   if(deleteMatch||productDelete||playdateDelete){
     if(!env.ADMIN_DELETE_SECRET||env.ADMIN_DELETE_SECRET.length<8)return reply({error:"관리자 삭제 비밀번호가 설정되지 않았습니다."},503);
@@ -99,6 +100,17 @@ export default {async fetch(req,env){
       const id=crypto.randomUUID(),now=new Date().toISOString();
       await env.DB.prepare("INSERT INTO playdates(id,nickname,place,starts_at,min_month,max_month,capacity,details,notes,region,created_at,approved) VALUES(?,?,?,?,?,?,?,?,?,?,?,1)").bind(id,nickname,place,starts_at,min,max,capacity,details,notes,region,now).run();
       return reply({ok:true,id},201);
+    }
+
+    if(searchPath){
+      if(req.method!=="GET")return reply({error:"허용되지 않은 요청입니다."},405);
+      const q=norm(url.searchParams.get("q"),65);
+      if(q.length<2)return reply({items:[]});
+      const pattern="%"+q.replace(/[\\%_]/g, v=>"\\"+v)+"%";
+      const rec=await env.DB.prepare("SELECT 'recommendation' AS kind,category,title,reason AS snippet,id FROM recommendations WHERE approved=1 AND (title LIKE ? ESCAPE '\\' OR reason LIKE ? ESCAPE '\\') ORDER BY created_at DESC LIMIT 6").bind(pattern,pattern).all();
+      const rev=await env.DB.prepare("SELECT 'review' AS kind,category,product_title AS title,body AS snippet,id FROM product_reviews WHERE approved=1 AND (product_title LIKE ? ESCAPE '\\' OR body LIKE ? ESCAPE '\\') ORDER BY created_at DESC LIMIT 6").bind(pattern,pattern).all();
+      const plays=await env.DB.prepare("SELECT 'playdate' AS kind,'playdate' AS category,place AS title,details AS snippet,id FROM playdates WHERE approved=1 AND (place LIKE ? ESCAPE '\\' OR details LIKE ? ESCAPE '\\') ORDER BY starts_at DESC LIMIT 5").bind(pattern,pattern).all();
+      return reply({items:[...(rec.results||[]),...(rev.results||[]),...(plays.results||[])]});
     }
     if(summaryPath){
       if(req.method!=="GET")return reply({error:"허용되지 않은 요청입니다."},405);
