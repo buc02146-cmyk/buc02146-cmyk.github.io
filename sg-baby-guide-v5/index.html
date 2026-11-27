@@ -659,6 +659,158 @@ async function updateTodayVisitors(){
 }
 updateTodayVisitors();
 
-mountCats();if(['grocery','clinic','medicine','gear','outing','preschool','fruit','living','prep','benefit','recommendations','playdate','compare'].includes(location.hash.slice(1)))openCategory(location.hash.slice(1));
+
+const PLAYDATE_REGIONS=[['All','전체 지역'],['Central','Central'],['East','East'],['West','West'],['North','North'],['South','South'],['Unknown','기타']];
+let playdateCache=[],reviewStats=new Map(),compareType='diaper';
+const reviewKey=(c,t)=>c+'||'+t;
+function summaryLine(category,title){
+ const entry=reviewStats.get(reviewKey(category,title));
+ if(!entry||!Number(entry.total))return '첫 사용자 후기를 기다려요';
+ const percent=Math.round((Number(entry.good||0)/Number(entry.total))*100);
+ return '후기 '+Number(entry.total)+'개 · 👍 '+percent+'% 만족';
+}
+async function refreshReviewSummaries(){
+ try{
+  const res=await fetch('/api/review-summary',{cache:'no-store'});if(!res.ok)return;
+  const data=await res.json();reviewStats=new Map((data.items||[]).map(item=>[reviewKey(item.category,item.product_title),item]));
+  document.querySelectorAll('.review-meter').forEach(el=>{
+   const stats=reviewStats.get(reviewKey(el.dataset.category,el.dataset.title));
+   el.textContent=summaryLine(el.dataset.category,el.dataset.title);
+   el.classList.toggle('review-meter-empty',!stats?.total);
+ });
+ }catch{}
+}
+function setupGlobalSearch(){
+ const input=document.querySelector('#globalSearch'),output=document.querySelector('#globalResults'),clear=document.querySelector('#globalSearchClear');
+ if(!input||!output)return;
+ const search=()=>{
+  const q=input.value.trim().toLocaleLowerCase();
+  if(!q){output.innerHTML='';output.classList.add('hide');return;}
+  const found=DATA.records.filter(item=>(item.title+' '+(item.desc||'')+' '+(item.review||'')+' '+(item.sub||'')+' '+(item.address||'')).toLocaleLowerCase().includes(q)).slice(0,12);
+  output.classList.remove('hide');
+  output.innerHTML=found.map((item,i)=>'<button class="global-result" type="button" data-index="'+i+'"><div><b>'+e(item.title)+'</b><small>'+e(categories.find(c=>c.id===item.category)?.name||'정보')+' · '+e(item.sub||'')+'</small></div><span>보기 ↗</span></button>').join('')||'<div class="empty">검색된 정보가 없습니다. 다른 단어로 검색해 주세요.</div>';
+  output.querySelectorAll('[data-index]').forEach(btn=>btn.onclick=()=>{
+    const item=found[Number(btn.dataset.index)];
+    openCategory(item.category);
+    if(item.category==='outing'){state.search=item.title;renderPlaces();return;}
+    state.search=item.title;const toolbar=document.querySelector('#search');if(toolbar)toolbar.value=item.title;renderContent();
+  });
+ };
+ input.addEventListener('input',search);
+ clear.onclick=()=>{input.value='';search();input.focus()};
+}
+const dateLabel=local=>{const date=new Date(local+'+08:00');return Number.isNaN(date.getTime())?local:date.toLocaleString('ko-KR',{timeZone:'Asia/Singapore',month:'long',day:'numeric',weekday:'short',hour:'2-digit',minute:'2-digit'})};
+const futurePlaydate=x=>Date.parse(x.starts_at+'+08:00')>Date.now()-3600000;
+async function fetchPlaydates(){
+ const r=await fetch('/api/playdates',{cache:'no-store'});const j=await r.json();if(!r.ok)throw Error(j.error||'모임을 불러오지 못했습니다.');
+ playdateCache=(j.items||[]).filter(futurePlaydate);return playdateCache;
+}
+function playdateCard(p,home=false){
+ const href='https://open.kakao.com/o/gKHZMCYi';
+ if(home)return '<button type="button" class="home-playdate-teaser" data-playdate-open="1"><strong>'+e(p.place)+'</strong><small>📅 '+e(dateLabel(p.starts_at))+'</small><small>👶 '+p.min_month+'–'+p.max_month+'M · '+e(p.region)+'</small></button>';
+ return '<article class="playdate-item"><h4>📍 '+e(p.place)+'</h4><div class="playdate-pills"><span>📅 '+e(dateLabel(p.starts_at))+'</span><span>👶 '+p.min_month+'–'+p.max_month+'M</span><span>👥 '+p.capacity+'명</span><span>'+e(p.region)+'</span></div><p>☕ '+e(p.details)+'</p>'+(p.notes?'<small>💬 '+e(p.notes)+'</small>':'')+'<p style="font-size:11px;color:#85968a;margin:9px 0 0">작성자 · '+e(p.nickname)+'</p><div class="playdate-actions"><a href="'+href+'" target="_blank" rel="noopener noreferrer">카톡에서 참여 문의 ↗</a><button type="button" class="playdate-copy" data-id="'+e(p.id)+'">모집글 복사</button><button type="button" class="playdate-remove" data-id="'+e(p.id)+'">관리자 삭제</button></div></article>';
+}
+async function showPlaydateHome(){
+ const el=document.querySelector('#homePlaydateList');if(!el)return;
+ try{
+  const posts=await fetchPlaydates();
+  el.innerHTML=posts.slice(0,3).map(p=>playdateCard(p,true)).join('')||'<div class="home-playdate-teaser"><strong>첫 플레이데이트를 모집해 보세요 🧸</strong><small>동네 친구를 만나는 첫 모임을 직접 열 수 있어요.</small></div>';
+  el.querySelectorAll('[data-playdate-open]').forEach(b=>b.onclick=()=>openCategory('playdate'));
+ }catch(err){el.innerHTML='<p class="muted">'+e(err.message)+'</p>'}
+}
+function showPlaydatePosts(){
+ const wrap=document.querySelector('#playdateList');if(!wrap)return;
+ const region=document.querySelector('#pdRegionFilter')?.value||'All';
+ const mon=document.querySelector('#pdMonthFilter')?.value||'all';
+ const m=mon==='all'?null:Number(mon);
+ const list=playdateCache.filter(p=>(region==='All'||region===p.region)&&(m===null||(p.min_month<=m&&p.max_month>=m)));
+ wrap.innerHTML=list.map(p=>playdateCard(p)).join('')||'<div class="empty">현재 조건에 맞는 플레이데이트가 없습니다. 직접 모임을 열어 보세요.</div>';
+ wrap.querySelectorAll('.playdate-copy').forEach(btn=>btn.onclick=async()=>{
+  const p=playdateCache.find(x=>x.id===btn.dataset.id);if(!p)return;
+  const msg='🧸 플레이데이트 모집\n\n📍 장소: '+p.place+'\n📅 날짜 및 시간: '+dateLabel(p.starts_at)+'\n👶 아이 월령: '+p.min_month+'–'+p.max_month+'개월\n👥 모집 인원: '+p.capacity+'명\n☕ 모임 내용: '+p.details+'\n💬 기타 사항: '+(p.notes||'-');
+  try{await navigator.clipboard.writeText(msg);btn.textContent='복사 완료'}catch{window.prompt('모집글을 복사해 주세요.',msg)}
+ });
+ wrap.querySelectorAll('.playdate-remove').forEach(btn=>btn.onclick=async()=>{
+  if(!confirm('이 플레이데이트 모집글을 삭제할까요?'))return;
+  const secret=prompt('관리자 삭제 비밀번호를 입력하세요.');if(!secret)return;
+  try{const res=await fetch('/api/playdates/'+encodeURIComponent(btn.dataset.id),{method:'DELETE',headers:{'x-admin-secret':secret}});const data=await res.json();if(!res.ok)throw Error(data.error||'삭제할 수 없습니다.');await fetchPlaydates();showPlaydatePosts();showPlaydateHome();}catch(err){alert(err.message)}
+ });
+}
+async function renderPlaydates(){
+ const root=document.querySelector('#playdatePanel');if(!root)return;
+ const monthOptions=Array.from({length:61},(_,i)=>'<option value="'+i+'">'+i+'M</option>').join('');
+ const regionOptions=PLAYDATE_REGIONS.filter(([v])=>v!=='All').map(([v,n])=>'<option value="'+v+'">'+n+'</option>').join('');
+ root.innerHTML='<div class="playdate-layout"><section class="playdate-formbox"><h3>🧸 플레이데이트 모집하기</h3><p class="source-note">채팅방의 플데양식과 동일한 항목으로 모임을 등록할 수 있어요. 참여 문의는 카카오톡에서 진행합니다.</p><form class="playdate-form" id="playdateForm">'
+ +'<label>닉네임<input name="nickname" maxlength="24" minlength="2" required placeholder="예: 토끼맘"></label>'
+ +'<label>📍 장소<input name="place" maxlength="110" required placeholder="예: West Coast Park"></label>'
+ +'<label>지역<select name="region">'+regionOptions+'</select></label>'
+ +'<label>📅 날짜 및 시간<input name="starts_at" type="datetime-local" required></label>'
+ +'<div class="playdate-months"><label>👶 아이 월령부터<select name="min_month">'+monthOptions+'</select></label><label>👶 아이 월령까지<select name="max_month">'+monthOptions+'</select></label></div>'
+ +'<label>👥 모집 인원<input name="capacity" type="number" min="2" max="50" value="4" required></label>'
+ +'<label>☕ 모임 내용<textarea name="details" rows="3" maxlength="500" minlength="4" required placeholder="무엇을 하며 놀 예정인가요?"></textarea></label>'
+ +'<label>💬 기타 사항<textarea name="notes" rows="2" maxlength="450" placeholder="준비물·유의사항 등"></textarea></label>'
+ +'<input name="website" class="honeypot" tabindex="-1" autocomplete="off"><button type="submit">플레이데이트 모집 등록</button><div class="source-note">아이 실명·개인 연락처·집 주소는 작성하지 마세요.</div><p id="playdateStatus" aria-live="polite"></p></form></section>'
+ +'<section class="playdate-listbox"><h3>📅 모집 중인 플레이데이트</h3><div class="playdate-list-filters"><select id="pdRegionFilter"><option value="All">전체 지역</option>'+regionOptions+'</select><select id="pdMonthFilter"><option value="all">전체 월령</option>'+monthOptions+'</select></div><div id="playdateList" class="playdate-list">모임을 불러오는 중입니다…</div></section></div>';
+ const form=document.querySelector('#playdateForm');
+ form.querySelector('[name="max_month"]').value='24';
+ form.onsubmit=async event=>{
+  event.preventDefault();const btn=form.querySelector('button[type="submit"]');btn.disabled=true;
+  const status=document.querySelector('#playdateStatus');status.textContent='모임을 등록하고 있습니다…';
+  try{
+   const d=Object.fromEntries(new FormData(form));const res=await fetch('/api/playdates',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(d)}),v=await res.json();
+   if(!res.ok)throw Error(v.error||'등록하지 못했습니다.');
+   status.textContent='모임이 등록됐습니다! 카카오톡에서 참가자를 모집해 보세요.';form.reset();form.querySelector('[name="max_month"]').value='24';
+   await fetchPlaydates();showPlaydatePosts();showPlaydateHome();
+  }catch(err){status.textContent=err.message}finally{btn.disabled=false}
+ };
+ document.querySelector('#pdRegionFilter').onchange=showPlaydatePosts;
+ document.querySelector('#pdMonthFilter').onchange=showPlaydatePosts;
+ try{await fetchPlaydates();showPlaydatePosts()}catch(err){document.querySelector('#playdateList').innerHTML='<div class="empty">'+e(err.message)+'</div>'}
+}
+async function loadHomeRecentReviews(){
+ const root=document.querySelector('#homeRecentReviews');if(!root)return;
+ try{
+  const res=await fetch('/api/recent-reviews',{cache:'no-store'});const d=await res.json();if(!res.ok)throw Error(d.error||'불러올 수 없습니다.');
+  root.innerHTML=d.items?.length?d.items.map(x=>'<button type="button" class="recent-item" data-cat="'+e(x.category)+'" data-title="'+e(x.product_title)+'"><small>'+e(x.nickname||'익명')+' · '+reviewText(x.sentiment)+'</small><b>'+e(x.product_title)+'</b><p>'+e(x.body)+'</p></button>').join(''):'<div class="recent-item"><b>첫 사용 후기를 기다리고 있어요</b><p>제품 카드를 열어 여러분의 경험을 남겨주세요.</p></div>';
+  root.querySelectorAll('[data-cat]').forEach(btn=>btn.onclick=()=>{
+   openCategory(btn.dataset.cat);
+   state.search=btn.dataset.title;
+   const input=document.querySelector('#search');if(input)input.value=state.search;
+   renderContent();
+  });
+ }catch(err){root.innerHTML='<p class="muted">'+e(err.message)+'</p>'}
+}
+function comparisonCandidates(){
+ if(compareType==='formula')return DATA.records.filter(x=>x.category==='grocery'&&x.sub==='분유');
+ return DATA.records.filter(x=>x.category==='gear'&&x.sub==='기저귀');
+}
+function comparisonItem(p){
+ if(!p)return '<div class="empty">제품을 선택해 주세요.</div>';
+ const stat=reviewStats.get(reviewKey(p.category,p.title));
+ const total=Number(stat?.total||0),positive=Number(stat?.good||0);
+ const stattext=total?'커뮤니티 실제 후기 '+total+'개 · 만족 '+Math.round(positive/total*100)+'%':'아직 등록된 사용 후기가 없습니다.';
+ const photo=p.photo?'<img src="'+e(p.photo)+'" loading="lazy" alt="'+e(p.title)+'" onerror="this.remove()">':'<div class="fallback">🥛</div>';
+ return '<article class="compare-product">'+photo+'<h4>'+e(p.title)+'</h4><p>'+e(p.desc||'')+'</p><div class="compare-review">'+e(stattext)+'</div><p><b>기존 커뮤니티 후기 요약</b><br>'+e(p.review||'이 정확한 제품에 대한 후기 자료는 아직 없습니다.')+'</p>'+(p.url?'<a class="go" href="'+e(p.url)+'" target="_blank" rel="noopener noreferrer">제품 상세 보기 ↗</a>':'')+'</article>';
+}
+function renderComparison(){
+ const root=document.querySelector('#comparePanel');if(!root)return;
+ const candidates=comparisonCandidates();
+ const opts=candidates.map((p,i)=>'<option value="'+i+'">'+e(p.title)+'</option>').join('');
+ root.innerHTML='<div class="compare-wrap"><h3>⚖️ 기저귀 · 분유 비교하기</h3><div class="compare-tabs"><button type="button" data-compare="diaper" class="'+(compareType==='diaper'?'on':'')+'">기저귀</button><button type="button" data-compare="formula" class="'+(compareType==='formula'?'on':'')+'">분유</button></div>'
+ +'<div class="compare-select"><label>첫 번째 제품<select id="cmpOne">'+opts+'</select></label><label>두 번째 제품<select id="cmpTwo">'+opts+'</select></label></div><div id="cmpResults" class="compare-products"></div><div class="compare-note">제품의 설명과 기존 커뮤니티 후기, 새로 작성된 실제 사용자 후기를 나란히 비교합니다. 표시된 만족 비율은 등록된 소수의 후기 기준이며 제품 성능이나 안전성의 검증 결과가 아닙니다. 가격·성분과 사이즈는 해당 제품의 최신 라벨에서 확인하세요.</div></div>';
+ const first=document.querySelector('#cmpOne'),second=document.querySelector('#cmpTwo');second.value=String(Math.min(1,candidates.length-1));
+ const update=()=>{document.querySelector('#cmpResults').innerHTML=comparisonItem(candidates[Number(first.value)])+comparisonItem(candidates[Number(second.value)])};
+ first.onchange=update;second.onchange=update;update();
+ root.querySelectorAll('[data-compare]').forEach(button=>button.onclick=()=>{compareType=button.dataset.compare;renderComparison()});
+}
+function mountHomeWidgets(){
+ setupGlobalSearch();
+ const c=document.querySelector('#homePlaydateOpen');if(c)c.onclick=()=>openCategory('playdate');
+ showPlaydateHome();
+ loadHomeRecentReviews();
+ refreshReviewSummaries();
+}
+
+mountCats();mountHomeWidgets();if(['grocery','clinic','medicine','gear','outing','preschool','fruit','living','prep','benefit','recommendations','playdate','compare'].includes(location.hash.slice(1)))openCategory(location.hash.slice(1));
 </script>
 </body></html>
