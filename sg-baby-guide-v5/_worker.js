@@ -119,7 +119,7 @@ export default {async fetch(req,env){
     }
     if(recentPath){
       if(req.method!=="GET")return reply({error:"허용되지 않은 요청입니다."},405);
-      const rows=await env.DB.prepare("SELECT id,nickname,body,sentiment,created_at,category,product_title FROM product_reviews WHERE approved=1 ORDER BY created_at DESC LIMIT 6").all();
+      const rows=await env.DB.prepare("SELECT id,nickname,body,sentiment,created_at,category,product_title,CASE WHEN photo_data IS NULL THEN 0 ELSE 1 END AS has_photo FROM product_reviews WHERE approved=1 ORDER BY created_at DESC LIMIT 6").all();
       return reply({items:rows.results||[]});
     }
     if(photoGet){
