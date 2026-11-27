@@ -6,6 +6,12 @@ const norm=(v,max)=>typeof v==="string"?v.trim().slice(0,max):"";
 async function prepare(db){
   await db.prepare("CREATE TABLE IF NOT EXISTS recommendations (id TEXT PRIMARY KEY, category TEXT NOT NULL, title TEXT NOT NULL, url TEXT, reason TEXT NOT NULL, created_at TEXT NOT NULL, approved INTEGER NOT NULL DEFAULT 1, nickname TEXT NOT NULL DEFAULT '익명')").run();
   await db.prepare("CREATE TABLE IF NOT EXISTS product_reviews (id TEXT PRIMARY KEY, category TEXT NOT NULL, product_title TEXT NOT NULL, nickname TEXT NOT NULL DEFAULT '익명', body TEXT NOT NULL, sentiment TEXT NOT NULL DEFAULT 'good', created_at TEXT NOT NULL, approved INTEGER NOT NULL DEFAULT 1)").run();
+  await db.prepare("CREATE TABLE IF NOT EXISTS playdates (id TEXT PRIMARY KEY, nickname TEXT NOT NULL, place TEXT NOT NULL, starts_at TEXT NOT NULL, min_month INTEGER NOT NULL, max_month INTEGER NOT NULL, capacity INTEGER NOT NULL, details TEXT NOT NULL, notes TEXT NOT NULL DEFAULT '', region TEXT NOT NULL DEFAULT 'Central', created_at TEXT NOT NULL, approved INTEGER NOT NULL DEFAULT 1)").run();
+  const photoColumns=await db.prepare("PRAGMA table_info(product_reviews)").all();
+  if(!(photoColumns.results||[]).some(c=>c.name==="photo_data")){
+    try{await db.prepare("ALTER TABLE product_reviews ADD COLUMN photo_data TEXT").run()}
+    catch(err){if(!/duplicate column/i.test(String(err)))throw err}
+  }
   const info=await db.prepare("PRAGMA table_info(recommendations)").all();
   if(!(info.results||[]).some(c=>c.name==="nickname")){
     try{await db.prepare("ALTER TABLE recommendations ADD COLUMN nickname TEXT NOT NULL DEFAULT '익명'").run()}
@@ -19,9 +25,14 @@ export default {async fetch(req,env){
   const productDelete=url.pathname.match(/^\/api\/product-reviews\/([0-9a-fA-F-]{36})$/);
   const productPath=url.pathname==="/api/product-reviews";
   const visitorPath=url.pathname==="/api/visitors/today";
-  if(!deleteMatch&&!productDelete&&!productPath&&!visitorPath&&url.pathname!=="/api/recommendations"&&!isHealth)return env.ASSETS.fetch(req);
-  if((deleteMatch||productDelete)&&req.method!=="DELETE")return reply({error:"허용되지 않은 요청입니다."},405);
-  if(deleteMatch||productDelete){
+  const playdatePath=url.pathname==="/api/playdates";
+  const playdateDelete=url.pathname.match(/^\/api\/playdates\/([0-9a-fA-F-]{36})$/);
+  const summaryPath=url.pathname==="/api/review-summary";
+  const recentPath=url.pathname==="/api/recent-reviews";
+  const photoGet=url.pathname.match(/^\/api\/review-photos\/([0-9a-fA-F-]{36})$/);
+  if(!deleteMatch&&!productDelete&&!productPath&&!visitorPath&&!playdatePath&&!playdateDelete&&!summaryPath&&!recentPath&&!photoGet&&url.pathname!=="/api/recommendations"&&!isHealth)return env.ASSETS.fetch(req);
+  if((deleteMatch||productDelete||playdateDelete)&&req.method!=="DELETE")return reply({error:"허용되지 않은 요청입니다."},405);
+  if(deleteMatch||productDelete||playdateDelete){
     if(!env.ADMIN_DELETE_SECRET||env.ADMIN_DELETE_SECRET.length<8)return reply({error:"관리자 삭제 비밀번호가 설정되지 않았습니다."},503);
     const supplied=req.headers.get("x-admin-secret")||"";
     const encoder=new TextEncoder();
@@ -60,6 +71,54 @@ export default {async fetch(req,env){
       return reply({ok:true,deleted:itemId});
     }
 
+
+    if(playdateDelete){
+      const result=await env.DB.prepare("DELETE FROM playdates WHERE id=?").bind(playdateDelete[1]).run();
+      return (result.meta?.changes||0)>0?reply({ok:true}):reply({error:"삭제할 모임이 없습니다."},404);
+    }
+    if(playdatePath){
+      if(req.method==="GET"){
+        const rows=await env.DB.prepare("SELECT id,nickname,place,starts_at,min_month,max_month,capacity,details,notes,region,created_at FROM playdates WHERE approved=1 ORDER BY starts_at ASC LIMIT 120").all();
+        return reply({items:rows.results||[]});
+      }
+      if(req.method!=="POST")return reply({error:"허용되지 않은 요청입니다."},405);
+      if(!(req.headers.get("content-type")||"").startsWith("application/json"))return reply({error:"입력 형식을 확인해 주세요."},415);
+      const raw=await req.text();if(raw.length>4500)return reply({error:"내용이 너무 깁니다."},413);
+      let d;try{d=JSON.parse(raw)}catch{return reply({error:"입력 형식이 올바르지 않습니다."},400)}
+      if(d.website)return reply({ok:true});
+      const nickname=norm(d.nickname,24),place=norm(d.place,110),starts_at=norm(d.starts_at,40),region=norm(d.region,24),
+      details=norm(d.details,500),notes=norm(d.notes,450),capacity=Number(d.capacity),min=Number(d.min_month),max=Number(d.max_month);
+      if(nickname.length<2||place.length<2||details.length<4||!["Central","East","West","North","South","Unknown"].includes(region)
+         ||!Number.isInteger(capacity)||capacity<2||capacity>50||!Number.isInteger(min)||!Number.isInteger(max)||min<0||max>120||min>max)
+        return reply({error:"장소·월령·정원·내용을 확인해 주세요."},400);
+      if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(starts_at)||!Number.isFinite(Date.parse(starts_at)))
+        return reply({error:"날짜와 시간을 선택해 주세요."},400);
+      const meetingAt=Date.parse(starts_at+"+08:00");
+      if(!Number.isFinite(meetingAt)||meetingAt<Date.now()-3600000||meetingAt>Date.now()+365*86400000)
+        return reply({error:"모임은 앞으로 1년 이내 날짜로 등록해 주세요."},400);
+      const id=crypto.randomUUID(),now=new Date().toISOString();
+      await env.DB.prepare("INSERT INTO playdates(id,nickname,place,starts_at,min_month,max_month,capacity,details,notes,region,created_at,approved) VALUES(?,?,?,?,?,?,?,?,?,?,?,1)").bind(id,nickname,place,starts_at,min,max,capacity,details,notes,region,now).run();
+      return reply({ok:true,id},201);
+    }
+    if(summaryPath){
+      if(req.method!=="GET")return reply({error:"허용되지 않은 요청입니다."},405);
+      const rows=await env.DB.prepare("SELECT category,product_title,COUNT(*) AS total,SUM(CASE WHEN sentiment='good' THEN 1 ELSE 0 END) AS good,SUM(CASE WHEN sentiment='neutral' THEN 1 ELSE 0 END) AS neutral,SUM(CASE WHEN sentiment='bad' THEN 1 ELSE 0 END) AS bad FROM product_reviews WHERE approved=1 GROUP BY category,product_title").all();
+      return reply({items:rows.results||[]});
+    }
+    if(recentPath){
+      if(req.method!=="GET")return reply({error:"허용되지 않은 요청입니다."},405);
+      const rows=await env.DB.prepare("SELECT id,nickname,body,sentiment,created_at,category,product_title FROM product_reviews WHERE approved=1 ORDER BY created_at DESC LIMIT 6").all();
+      return reply({items:rows.results||[]});
+    }
+    if(photoGet){
+      if(req.method!=="GET")return reply({error:"허용되지 않은 요청입니다."},405);
+      const data=await env.DB.prepare("SELECT photo_data FROM product_reviews WHERE id=? AND approved=1").bind(photoGet[1]).first();
+      const payload=data?.photo_data;
+      if(!payload||!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(payload))return reply({error:"등록된 사진이 없습니다."},404);
+      const binary=atob(payload.slice("data:image/jpeg;base64,".length));
+      const bytes=Uint8Array.from(binary,c=>c.charCodeAt(0));
+      return new Response(bytes,{headers:{"content-type":"image/jpeg","cache-control":"public, max-age=3600","x-content-type-options":"nosniff","content-security-policy":"default-src 'none'"}});
+    }
     if(productDelete){
       const id=productDelete[1];
       const result=await env.DB.prepare("DELETE FROM product_reviews WHERE id=?").bind(id).run();
@@ -70,7 +129,7 @@ export default {async fetch(req,env){
         const category=norm(url.searchParams.get("category"),30);
         const title=norm(url.searchParams.get("title"),130);
         if(!CATEGORIES.has(category)||!title)return reply({error:"상품 정보를 확인해 주세요."},400);
-        const rows=await env.DB.prepare("SELECT id,nickname,body,sentiment,created_at FROM product_reviews WHERE approved=1 AND category=? AND product_title=? ORDER BY created_at DESC LIMIT 80").bind(category,title).all();
+        const rows=await env.DB.prepare("SELECT id,nickname,body,sentiment,created_at,CASE WHEN photo_data IS NULL THEN 0 ELSE 1 END AS has_photo FROM product_reviews WHERE approved=1 AND category=? AND product_title=? ORDER BY created_at DESC LIMIT 80").bind(category,title).all();
         return reply({items:rows.results||[]});
       }
       if(req.method!=="POST")return reply({error:"허용되지 않은 요청입니다."},405);
@@ -79,9 +138,17 @@ export default {async fetch(req,env){
       let d;try{d=JSON.parse(raw)}catch{return reply({error:"입력 형식이 올바르지 않습니다."},400)}
       if(d.website)return reply({ok:true});
       const category=norm(d.category,30),title=norm(d.title,130),nickname=norm(d.nickname,24)||"익명",body=norm(d.body,600),sentiment=norm(d.sentiment,12)||"good";
+      let photo=null;
+      if(d.photo){
+        if(d.photo_consent!==true)return reply({error:"사진 공개 및 개인정보 확인에 동의해 주세요."},400);
+        if(typeof d.photo!=="string"||d.photo.length>240000||!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(d.photo))
+          return reply({error:"사진은 170KB 이하의 JPEG로 올려주세요."},413);
+        try{const rawImage=atob(d.photo.slice("data:image/jpeg;base64,".length));if(rawImage.length>170000||rawImage.charCodeAt(0)!==255||rawImage.charCodeAt(1)!==216||rawImage.charCodeAt(2)!==255)throw Error();}catch{return reply({error:"지원하지 않는 이미지입니다."},415)}
+        photo=d.photo;
+      }
       if(!["grocery","gear","medicine"].includes(category)||title.length<2||body.length<8||!["good","neutral","bad"].includes(sentiment))return reply({error:"제품명·후기(8자 이상)·평가를 확인해 주세요."},400);
       const id=crypto.randomUUID(),createdAt=new Date().toISOString();
-      await env.DB.prepare("INSERT INTO product_reviews (id,category,product_title,nickname,body,sentiment,created_at,approved) VALUES (?,?,?,?,?,?,?,1)").bind(id,category,title,nickname,body,sentiment,createdAt).run();
+      await env.DB.prepare("INSERT INTO product_reviews (id,category,product_title,nickname,body,sentiment,created_at,approved,photo_data) VALUES (?,?,?,?,?,?,?,1,?)").bind(id,category,title,nickname,body,sentiment,createdAt,photo).run();
       return reply({ok:true,id},201);
     }
     if(isHealth)return reply({database:"connected",table:"ready",admin_delete_password:(env.ADMIN_DELETE_SECRET&&env.ADMIN_DELETE_SECRET.length>=8)?"configured":"not_configured"});
