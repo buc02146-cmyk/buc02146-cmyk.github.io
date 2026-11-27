@@ -1,7 +1,8 @@
 // Cloudflare Pages advanced worker, with a D1 binding named DB.
 const CATEGORIES=new Set(["grocery","clinic","medicine","gear","outing","preschool","fruit","living","prep"]);
-const LISTING_SUBCATEGORIES={"grocery":["치즈","요거트","분유","버터","떡뻥·간식","이유식 재료","생선·단백질","이유식·간편식","기타"],"gear":["기저귀","유모차","보습 로션·크림","이유식용품","목욕용품","위생·건강","기타"],"outing":["관람·체험","실내 놀이터","야외","식당"],"clinic":["소아과·병원","치과","기타 의료기관"],"medicine":["상비약","기타"],"preschool":["유치원 후기","Infant Care","Childcare","기타 교육"],"living":["예방접종","건강 가이드","어린이집","비자","도우미","기타 생활 정보"]};
+const LISTING_SUBCATEGORIES={"grocery":["치즈","요거트","분유","버터","떡뻥·간식","이유식 재료","생선·단백질","이유식·간편식","기타"],"gear":["기저귀","유모차","보습 로션·크림","이유식용품","목욕용품","놀이용품","위생·건강","기타"],"outing":["관람·체험","실내 놀이터","야외","식당"],"clinic":["소아과·병원","치과","기타 의료기관"],"medicine":["상비약","기타"],"preschool":["유치원 후기","Infant Care","Childcare","기타 교육"],"living":["예방접종","건강 가이드","어린이집","비자","도우미","기타 생활 정보"]};
 const LISTING_REGIONS=new Set(["West","North","Central","East","South","Unknown"]);
+const LISTING_AGE_BANDS=new Set(["0-6m","6-12m","12-24m","24m+"]);
 const CURATED_LISTINGS=new Set(["grocery:Organic Valley Baby Swiss","grocery:Arla Natural Mozzarella Block 200g","grocery:Tamar Valley Greek Style Yoghurt","grocery:Jalna Greek Yoghurt","grocery:Lurpak Unsalted Butter 250g","grocery:질마재 유기농 현미귀리 스틱","gear:Nosiboo Pro 콧물흡입기","gear:MamyPoko Air Fit Marshmallow 팬티","gear:하기스 네이처메이드","gear:하기스 네이처메이드 오버나이트","gear:Pampers Premium Care","gear:Rascal + Friends 밤기저귀","gear:Merries Premium","gear:Doona","gear:Bugaboo Dragonfly","gear:Stokke YOYO3","gear:Silver Cross Dune","outing:Singapore Oceanarium","outing:Curiosity Cove","outing:Exploria","outing:National Gallery Singapore","outing:Children’s Museum Singapore","outing:Jacob Ballas Children’s Garden","outing:Kiztopia @ Jewel Changi","outing:Kiztopia @ New Bahru","outing:Paragon 실내 미끄럼틀 (Paragon Junior)","outing:HomeTeamNS T-Play @ Bukit Batok","outing:Marché @ 313 Somerset","outing:Marché @ VivoCity","outing:Amazonia @ Great World","outing:T-Play · 지점 미확인 후기","grocery:Fassler Sashimi Grade Salmon Portion Skinless (3pcs)","gear:Cetaphil Baby Daily Lotion","gear:Mustela Hydra Bébé Body Lotion","gear:ATOPALM MLE Cream","gear:Physiogel Calming Relief A.I. Cream","gear:Aveeno Baby Daily Moisture Lotion","gear:Richell Hinyari Shinai Bath Chair R","gear:Sudocrem Antiseptic Healing Cream","gear:Konny Bib Muslin Bandana","grocery:맘마밀 실온 이유식","gear:ATOPALM MLE Lotion","gear:Physiogel Soothing Care A.I. Cream","gear:ZEROID Intensive Oint-Cream","gear:Richell Soft Baby Chair","gear:Shnuggle Baby Bath","grocery:Aptamil Gold+ Infant Milk Formula Stage 1 900g","grocery:Nestlé NAN OPTIPRO Stage 1 800g","grocery:Abbott Similac Infant Milk Formula Stage 1 850g","clinic:KKH","clinic:NUH","clinic:Aglow @ United Square","clinic:Kinder Clinic (Paragon / Mount E Novena)"]);
 const H={"content-type":"application/json; charset=utf-8","cache-control":"no-store"};
 const reply=(v,status=200)=>new Response(JSON.stringify(v),{status,headers:H});
@@ -65,12 +66,15 @@ async function prepare(db){
     try{await db.prepare("ALTER TABLE product_reviews ADD COLUMN photo_data TEXT").run()}
     catch(err){if(!/duplicate column/i.test(String(err)))throw err}
   }
+  await ensureColumn(db,"product_reviews","author_hash","TEXT",photoColumns.results||[]);
   const info=await db.prepare("PRAGMA table_info(recommendations)").all();
   await ensureColumn(db,"recommendations","nickname","TEXT NOT NULL DEFAULT '익명'",info.results||[]);
   await ensureColumn(db,"recommendations","listing_subcategory","TEXT",info.results||[]);
   await ensureColumn(db,"recommendations","listing_region","TEXT",info.results||[]);
   await ensureColumn(db,"recommendations","author_hash","TEXT",info.results||[]);
   await ensureColumn(db,"recommendations","photo_data","TEXT",info.results||[]);
+  await ensureColumn(db,"recommendations","listing_age","TEXT",info.results||[]);
+  await ensureColumn(db,"recommendations","listing_min_month","INTEGER",info.results||[]);
 }
 export default {async fetch(req,env){
   const url=new URL(req.url);
@@ -94,13 +98,13 @@ export default {async fetch(req,env){
   if(!deleteMatch&&!productDelete&&!productPath&&!visitorPath&&!playdatePath&&!playdateDelete&&!playdateJoin&&!summaryPath&&!recentPath&&!listingRatingsPath&&!helpfulPath&&!searchPath&&!photoGet&&!listingPhoto&&url.pathname!=="/api/recommendations"&&!isHealth)return env.ASSETS.fetch(req);
   if((deleteMatch||productDelete||playdateDelete)&&req.method!=="DELETE"&&!playdateEdit&&!recommendationEdit)
     return reply({error:"허용되지 않은 요청입니다."},405);
-  const adminAction=productDelete||(playdateDelete&&!playdateEdit)||
-    ((deleteMatch&&!recommendationEdit||playdateEdit)&&req.headers.has("x-admin-secret"));
+  const adminAction=(playdateDelete&&!playdateEdit)||
+    ((productDelete||deleteMatch&&!recommendationEdit||playdateEdit)&&req.headers.has("x-admin-secret"));
   if(adminAction){
     if(!env.ADMIN_DELETE_SECRET||env.ADMIN_DELETE_SECRET.length<8)return reply({error:"관리자 비밀번호가 설정되지 않았습니다."},503);
     if(!await adminAuthorized(req,env))return reply({error:"관리자 비밀번호가 올바르지 않습니다."},403);
   }
-  if((deleteMatch||playdateEdit||playdatePath)&&req.method!=="GET"&&req.headers.get("origin")&&req.headers.get("origin")!==url.origin)
+  if((deleteMatch||productDelete||productPath||playdateEdit||playdatePath)&&req.method!=="GET"&&req.headers.get("origin")&&req.headers.get("origin")!==url.origin)
     return reply({error:"허용되지 않은 출처입니다."},403);
   if(!env.DB)return reply(isHealth?{database:"not_connected",admin_delete_password:(env.ADMIN_DELETE_SECRET&&env.ADMIN_DELETE_SECRET.length>=8)?"configured":"not_configured",note:"Cloudflare Pages에서 DB 바인딩을 저장한 뒤 새 배포를 시작하세요."}:{error:"현재 배포에 DB 연결이 적용되지 않았습니다. Cloudflare Settings → Bindings에서 DB를 저장하고 Deployments에서 새로 배포해 주세요."},503);
   try{
@@ -272,12 +276,21 @@ export default {async fetch(req,env){
       const token=existingToken||crypto.randomUUID();
       const hash=await helpfulBrowserHash(token);
       await prepareHelpful(env.DB);
+      const listingFeed=url.searchParams.get("include")==="listings"?`
+        UNION ALL
+        SELECT r.id,r.nickname,r.reason AS body,NULL AS sentiment,r.created_at,r.category,r.title AS product_title,
+          r.photo_data IS NOT NULL AS has_photo,0 AS helpful_count,0 AS helped,'listing' AS kind
+        FROM recommendations r WHERE r.approved=1 AND r.listing_subcategory IS NOT NULL
+      `:"";
       const rows=await env.DB.prepare(`
         SELECT r.id,r.nickname,r.body,r.sentiment,r.created_at,r.category,r.product_title,
           r.photo_data IS NOT NULL AS has_photo,
           (SELECT COUNT(*) FROM review_helpful_votes v WHERE v.review_id=r.id) AS helpful_count,
-          EXISTS(SELECT 1 FROM review_helpful_votes v WHERE v.review_id=r.id AND v.browser_hash=?) AS helped
-        FROM product_reviews r WHERE r.approved=1 ORDER BY r.created_at DESC LIMIT 6
+          EXISTS(SELECT 1 FROM review_helpful_votes v WHERE v.review_id=r.id AND v.browser_hash=?) AS helped,
+          'review' AS kind
+        FROM product_reviews r WHERE r.approved=1
+        ${listingFeed}
+        ORDER BY created_at DESC,id DESC LIMIT 6
       `).bind(hash).all();
       const headers=helpfulCookieHeaders(!existingToken&&(rows.results||[]).length?token:null);
       return new Response(JSON.stringify({items:rows.results||[]}),{headers});
@@ -363,7 +376,8 @@ export default {async fetch(req,env){
     }
     if(productDelete){
       const id=productDelete[1];
-      const result=await env.DB.prepare("DELETE FROM product_reviews WHERE id=?").bind(id).run();
+      if(!adminAction&&!author)return reply({error:"작성자만 후기를 삭제할 수 있습니다."},403);
+      const result=await env.DB.prepare("DELETE FROM product_reviews WHERE id=? AND (?=1 OR author_hash=?)").bind(id,adminAction?1:0,author).run();
       return (result.meta?.changes||0)>0?reply({ok:true}):reply({error:"삭제할 후기를 찾지 못했습니다."},404);
     }
     if(productPath){
@@ -371,7 +385,7 @@ export default {async fetch(req,env){
         const category=norm(url.searchParams.get("category"),30);
         const title=norm(url.searchParams.get("title"),130);
         if(!CATEGORIES.has(category)||!title)return reply({error:"상품 정보를 확인해 주세요."},400);
-        const rows=await env.DB.prepare("SELECT id,nickname,body,sentiment,created_at,CASE WHEN photo_data IS NULL THEN 0 ELSE 1 END AS has_photo FROM product_reviews WHERE approved=1 AND category=? AND product_title=? ORDER BY created_at DESC LIMIT 80").bind(category,title).all();
+        const rows=await env.DB.prepare("SELECT id,nickname,body,sentiment,created_at,photo_data IS NOT NULL AS has_photo,COALESCE(author_hash=?,0) AS owned FROM product_reviews WHERE approved=1 AND category=? AND product_title=? ORDER BY created_at DESC LIMIT 80").bind(author,category,title).all();
         return reply({items:rows.results||[]});
       }
       if(req.method!=="POST")return reply({error:"허용되지 않은 요청입니다."},405);
@@ -390,17 +404,17 @@ export default {async fetch(req,env){
       }
       if(!["grocery","gear","medicine","clinic"].includes(category)||title.length<2||body.length<8||!["good","neutral","bad"].includes(sentiment))return reply({error:"제품명·후기(8자 이상)·평가를 확인해 주세요."},400);
       const id=crypto.randomUUID(),createdAt=new Date().toISOString();
-      await env.DB.prepare("INSERT INTO product_reviews (id,category,product_title,nickname,body,sentiment,created_at,approved,photo_data) VALUES (?,?,?,?,?,?,?,1,?)").bind(id,category,title,nickname,body,sentiment,createdAt,photo).run();
+      await env.DB.prepare("INSERT INTO product_reviews (id,category,product_title,nickname,body,sentiment,created_at,approved,photo_data,author_hash) VALUES (?,?,?,?,?,?,?,1,?,?)").bind(id,category,title,nickname,body,sentiment,createdAt,photo,author).run();
       return reply({ok:true,id},201);
     }
     if(isHealth)return reply({database:"connected",table:"ready",admin_delete_password:(env.ADMIN_DELETE_SECRET&&env.ADMIN_DELETE_SECRET.length>=8)?"configured":"not_configured"});
     if(req.method==="GET"&&!deleteMatch){
       const listings=url.searchParams.get("listings")==="1";
-      const columns="id,category,title,url,reason,nickname,created_at,listing_subcategory,listing_region,photo_data IS NOT NULL AS has_photo,COALESCE(author_hash=?,0) AS owned";
+      const columns="id,category,title,url,reason,nickname,created_at,listing_subcategory,listing_region,listing_age,listing_min_month,photo_data IS NOT NULL AS has_photo,COALESCE(author_hash=?,0) AS owned";
       const rows=await env.DB.prepare(listings
         ?"SELECT "+columns+" FROM recommendations WHERE approved=1 AND listing_subcategory IS NOT NULL ORDER BY created_at DESC"
         :"SELECT "+columns+" FROM recommendations WHERE approved=1 ORDER BY created_at DESC LIMIT 150").bind(author).all();
-      return reply({items:rows.results||[]});
+      return reply({items:(rows.results||[]).map(item=>({...item,listing_age:JSON.parse(item.listing_age||"[]")}))});
     }
     if(req.method!=="POST"&&!recommendationEdit)return reply({error:"허용되지 않은 요청입니다."},405);
     if(recommendationEdit&&!author)return reply({error:"작성자만 수정할 수 있습니다."},403);
@@ -426,21 +440,30 @@ export default {async fetch(req,env){
     }
     if(!CATEGORIES.has(category)||title.length<2||reason.length<8||nickname.length<2)return reply({error:"카테고리·닉네임·제목·추천 이유를 확인해 주세요."},400);
     if(link){try{const u=new URL(link);if(!["https:","http:"].includes(u.protocol)||u.username||u.password)throw Error("URL")}catch{return reply({error:"정확한 웹사이트 링크를 입력해 주세요."},400)}}
+    const ages=d.listing_age,month=d.listing_min_month;
+    if(ages!==undefined&&(!Array.isArray(ages)||ages.length>LISTING_AGE_BANDS.size||ages.some(age=>!LISTING_AGE_BANDS.has(age))))
+      return reply({error:"추천 월령대를 다시 선택해 주세요."},400);
+    if(month!=null&&(!Number.isInteger(month)||month<0||month>48))
+      return reply({error:"추천 시작 월령은 0~48개월 사이에서 선택해 주세요."},400);
+    const savedAges=ages?.length?JSON.stringify([...new Set(ages)]):null;
     const sub=listingSubcategory||null,region=sub&&["outing","clinic"].includes(category)?listingRegion||"Unknown":null;
     if(recommendationEdit){
       const id=deleteMatch[1];
       const updated=await env.DB.prepare(`
         UPDATE recommendations SET category=?,title=?,url=?,reason=?,nickname=?,listing_subcategory=?,listing_region=?,
-          photo_data=CASE WHEN ? THEN ? ELSE photo_data END
+          photo_data=CASE WHEN ? THEN ? ELSE photo_data END,
+          listing_age=CASE WHEN ? THEN ? ELSE listing_age END,
+          listing_min_month=CASE WHEN ? THEN ? ELSE listing_min_month END
         WHERE id=? AND approved=1 AND author_hash=?
-      `).bind(category,title,link,reason,nickname,sub,region,d.photo!==undefined?1:0,d.photo??null,id,author).run();
+      `).bind(category,title,link,reason,nickname,sub,region,d.photo!==undefined?1:0,d.photo??null,
+        ages!==undefined?1:0,savedAges,month!==undefined?1:0,month??null,id,author).run();
       if(!updated.meta?.changes)return reply({error:"이 추천 글을 수정할 권한이 없습니다."},403);
       const item=await env.DB.prepare("SELECT photo_data IS NOT NULL AS has_photo FROM recommendations WHERE id=?").bind(id).first();
       return reply({ok:true,id,has_photo:item?.has_photo||0});
     }
     const id=crypto.randomUUID(),created_at=new Date().toISOString();
-    await env.DB.prepare("INSERT INTO recommendations (id,category,title,url,reason,created_at,approved,nickname,listing_subcategory,listing_region,photo_data,author_hash) VALUES (?,?,?,?,?,?,1,?,?,?,?,?)")
-      .bind(id,category,title,link,reason,created_at,nickname,sub,region,d.photo??null,author).run();
+    await env.DB.prepare("INSERT INTO recommendations (id,category,title,url,reason,created_at,approved,nickname,listing_subcategory,listing_region,photo_data,author_hash,listing_age,listing_min_month) VALUES (?,?,?,?,?,?,1,?,?,?,?,?,?,?)")
+      .bind(id,category,title,link,reason,created_at,nickname,sub,region,d.photo??null,author,savedAges,month??null).run();
     return reply({ok:true,id,has_photo:d.photo?1:0},201);
   }catch(err){return reply({error:"데이터베이스 처리 중 오류가 발생했습니다. 배포 및 D1 설정을 확인해 주세요."},500)}
 }};

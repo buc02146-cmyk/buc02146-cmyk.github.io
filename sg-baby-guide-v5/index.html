@@ -162,7 +162,9 @@ body.detail-open .site-logo span{flex:none}
 .product-review-inner{padding:0 13px 14px;border-top:1px solid #e3eee5}
 .product-review-feed{padding:12px 0 7px;font-size:12px;color:#7b8c80}
 .product-review-entry{border:1px solid #e7ebe5;border-radius:11px;background:white;padding:10px 12px;margin:8px 0}
-.product-review-entry .review-head{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.product-review-entry .review-head{display:flex;gap:8px;align-items:center}
+.product-review-entry .review-byline{display:flex;align-items:center;flex-wrap:wrap;gap:5px;min-width:0}
+.product-review-entry .review-head small{flex:none;margin-inline-start:auto;text-align:right;white-space:nowrap}
 .product-review-entry .review-head strong{font-size:12px;color:#526a57}
 .product-review-entry .review-head small{font-size:10px;color:#88948a}
 .product-review-entry .review-head .sentiment{display:inline-flex;font-size:10px;border-radius:99px;background:#edf6ee;color:#628068;padding:3px 7px}
@@ -1035,6 +1037,13 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 @media(prefers-color-scheme:dark){.clinic-region-heading,.clinic-card-area{color:#e2c9f8}}
 .review-fold-author{display:block;margin-bottom:4px;font-size:12px;font-weight:800}
 .review-fold-text{white-space:pre-wrap}
+.listing-age-bands{margin:0;padding:8px 10px;border:1px solid #e0cfee;border-radius:9px}
+.listing-age-bands legend{padding:0 4px;font-size:12px;font-weight:750}
+.listing-age-bands>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.listing-dialog .listing-age-bands label{display:flex;align-items:center;gap:6px;margin:0}
+.listing-dialog .listing-age-bands input{width:auto;margin:0}
+.listing-dialog #listingStartingAge[hidden]{display:none}
+@media(prefers-color-scheme:dark){.listing-age-bands{border-color:#735e86}}
 </style>
 </head>
 <body>
@@ -1089,7 +1098,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
  </section>
  <div class="home-heading home-categories-heading"><h2><span class="category-heading-icon" aria-hidden="true">📚</span> <span>카테고리 둘러보기</span></h2><p>여덟 가지 주제로 편하게 찾아보세요</p></div>
  <div id="categories" class="categories"></div>
- <section class="home-recent"><div class="home-heading"><h2>💬 새로 올라온 사용 후기</h2><p>직접 경험한 이야기를 확인해 보세요</p></div><div id="homeRecentReviews" class="recent-grid"><p class="muted">최신 후기를 불러오는 중입니다…</p></div></section>
+ <section class="home-recent"><div class="home-heading"><h2>💬 새로 올라온 사용 후기</h2><p>이웃이 남긴 후기와 새로 등록한 추천을 만나보세요.</p></div><div id="homeRecentReviews" class="recent-grid"><p class="muted">최신 후기를 불러오는 중입니다…</p></div></section>
 </section>
 <section id="detail" class="detail" aria-live="polite">
  <div class="detail-head"><div><small>Singapore Parenting Guide</small><h2 id="sectionTitle"></h2><p id="sectionDescription"></p></div><button class="homebtn" id="backHome">← 전체 카테고리</button></div>
@@ -1140,6 +1149,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
    <label>카테고리<select name="category" required></select></label>
    <label>세부 분류<select name="listing_subcategory" required disabled></select></label>
    <div id="listingRegion"><label>지역<select name="listing_region"><option>West</option><option>North</option><option>Central</option><option>East</option><option>South</option><option value="Unknown">기타 / 모름</option></select></label></div>
+   <fieldset id="listingAgeBands" class="listing-age-bands" hidden disabled><legend>추천 월령대 (선택)</legend><div id="listingAgeChoices"></div></fieldset>
+   <label id="listingStartingAge" hidden>추천 시작 월령 (선택)<select name="listing_min_month" disabled></select></label>
    <label id="listingNameLabel" for="listingName"></label><input id="listingName" name="title" minlength="2" maxlength="90" required>
    <label>닉네임 (선택)<input name="nickname" minlength="2" maxlength="24" placeholder="익명" autocomplete="nickname"></label>
    <label>관련 링크 (선택)<input name="url" type="url" maxlength="600" placeholder="https://"></label>
@@ -1184,6 +1195,7 @@ const navigationGroups=[
 ];
 const findNavigationGroup=id=>navigationGroups.find(g=>g.id===id||g.tabs.includes(id));
 const labels={all:'전체', '0-6m':'0–6개월','6-12m':'6–12개월','12-24m':'12–24개월','24m+':'24개월 이상',parents:'부모/공통'};
+const LISTING_AGE_BANDS=['0-6m','6-12m','12-24m','24m+'];
 const regionNames={All:'전체 지역',Central:'Central',East:'East',West:'West',North:'North',South:'South',Unknown:'기타'};
 const state={category:null,sub:'전체',age:'all',outingMonth:null,region:'All',kind:'전체',search:'',rating:'전체'};let map=null,markerLayer=null;
 const $=(s)=>document.querySelector(s);const e=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1224,6 +1236,7 @@ function returnHome(updateHistory=true){
  $('#detail').classList.remove('visible');
  $('#homeLanding').classList.remove('hide');
  showPlaydateHome();
+ loadHomeRecentReviews();
  document.body.classList.remove('detail-open');
  window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -1236,7 +1249,7 @@ function restoreNavigationFromUrl(){
 }
 window.addEventListener('popstate',restoreNavigationFromUrl);
 window.addEventListener('hashchange',restoreNavigationFromUrl);
-const LISTING_SUBCATEGORIES={"grocery":["치즈","요거트","분유","버터","떡뻥·간식","이유식 재료","생선·단백질","이유식·간편식","기타"],"gear":["기저귀","유모차","보습 로션·크림","이유식용품","목욕용품","위생·건강","기타"],"outing":["관람·체험","실내 놀이터","야외","식당"],"clinic":["소아과·병원","치과","기타 의료기관"],"medicine":["상비약","기타"],"preschool":["유치원 후기","Infant Care","Childcare","기타 교육"],"living":["예방접종","건강 가이드","어린이집","비자","도우미","기타 생활 정보"]};
+const LISTING_SUBCATEGORIES={"grocery":["치즈","요거트","분유","버터","떡뻥·간식","이유식 재료","생선·단백질","이유식·간편식","기타"],"gear":["기저귀","유모차","보습 로션·크림","이유식용품","목욕용품","놀이용품","위생·건강","기타"],"outing":["관람·체험","실내 놀이터","야외","식당"],"clinic":["소아과·병원","치과","기타 의료기관"],"medicine":["상비약","기타"],"preschool":["유치원 후기","Infant Care","Childcare","기타 교육"],"living":["예방접종","건강 가이드","어린이집","비자","도우미","기타 생활 정보"]};
 const RATED_LISTING_CATEGORIES=new Set(['grocery','gear','outing','clinic']);
 const CLINIC_REGIONS={All:'전체 지역',Central:'Central · 중부',West:'West · 서부',East:'East · 동부',North:'North · 북부',South:'South · 남부',Unknown:'기타 · 지역 미지정'};
 const LISTING_ITEM_NAMES={grocery:'제품',gear:'제품',clinic:'병원·의료기관',medicine:'약·상비약',outing:'장소',preschool:'교육기관',living:'생활 정보'};
@@ -1285,6 +1298,7 @@ function toCommunityListing(item){
  return {communityId:item.id,category:item.category,title:item.title,sub:item.listing_subcategory,
   kind:item.listing_subcategory,region:item.listing_region||'Unknown',nickname:item.nickname||'익명',
   owned:Boolean(item.owned),photo:item.has_photo?listingPhotoUrl(item.id):'',
+  age:item.listing_age||[],minAge:item.listing_min_month??null,
   url:item.url,desc:'',review:item.reason,status:item.category==='outing'?'good':undefined,icon:item.category==='grocery'?'🛒':'🧸'};
 }
 async function refreshDirectory(category){
@@ -1317,6 +1331,12 @@ function syncListingFields(form){
  region.disabled=!['outing','clinic'].includes(category);
  $('#listingRegion').hidden=region.disabled;
  region.value=category===state.category&&state.region!=='All'?state.region:'Unknown';
+ const ageBands=$('#listingAgeBands');
+ ageBands.hidden=!category||category==='outing';
+ ageBands.disabled=ageBands.hidden;
+ const startingAge=$('#listingStartingAge');
+ startingAge.hidden=category!=='outing';
+ form.elements.namedItem('listing_min_month').disabled=startingAge.hidden;
  $('#listingNameLabel').textContent=category==='living'?'정보 제목':(LISTING_ITEM_NAMES[category]||'제품·장소')+' 이름';
 }
 function openListingDialog(category='',entry=null){
@@ -1333,6 +1353,9 @@ function openListingDialog(category='',entry=null){
   const values={title:entry.title,url:entry.url,nickname:entry.nickname,reason:entry.reason??entry.review,
    listing_subcategory:entry.listing_subcategory||entry.sub,listing_region:entry.listing_region||entry.region};
   for(const [name,value] of Object.entries(values))if(value!=null)form.elements.namedItem(name).value=value;
+  const ages=entry.listing_age||entry.age||[];
+  form.querySelectorAll('[name="listing_age"]').forEach(input=>input.checked=ages.includes(input.value));
+  form.elements.namedItem('listing_min_month').value=entry.listing_min_month??entry.minAge??'';
  }
  const lockedCategory=Boolean(entry?.communityId||entry?.listing_subcategory);
  categorySelect.disabled=lockedCategory;
@@ -1347,11 +1370,16 @@ function initListingDialog(){
  const category=form.elements.namedItem('category');
  category.replaceChildren(new Option('카테고리 선택',''),...REC_CATEGORIES.map(([id,name])=>new Option(name,id)));
  category.onchange=()=>syncListingFields(form);
+ $('#listingAgeChoices').innerHTML=LISTING_AGE_BANDS.map(age=>'<label><input type="checkbox" name="listing_age" value="'+age+'"> '+labels[age]+'</label>').join('');
+ form.elements.namedItem('listing_min_month').replaceChildren(new Option('월령 미지정',''),...Array.from({length:49},(_,month)=>new Option(month+'개월 이상',String(month))));
  form.onsubmit=async event=>{
   event.preventDefault();
   const button=form.querySelector('button[type=submit]'),status=$('#listingFormStatus');
-  const values=Object.fromEntries(new FormData(form));
+  const fields=new FormData(form);
+  const values=Object.fromEntries(fields);
   values.category=category.value;
+  if(values.category==='outing')values.listing_min_month=values.listing_min_month===''?null:Number(values.listing_min_month);
+  else values.listing_age=fields.getAll('listing_age');
   const id=form.dataset.editId;
   const file=values.photoFile;
   delete values.photoFile;
@@ -1438,7 +1466,8 @@ function reviewFold(item,label){
 function cardHTML(x){
  const badge=x.status==='bad'?'비추천':x.status==='good'?'추천':'';
  const label=(x.category==='medicine'?'약품':x.category==='grocery'?'먹거리':x.category==='gear'?'육아용품':'정보');
- const top='<div class="subline">'+e(x.sub||label)+(x.category==='gear'?' · '+e((x.age||[]).filter(a=>a!=='parents').map(a=>labels[a]||a).join(' · ')):'')+'</div>';
+ const ages=x.communityId||x.category==='gear'?(x.age||[]).filter(a=>a!=='parents').map(a=>labels[a]||a).join(' · '):'';
+ const top='<div class="subline">'+e(x.sub||label)+(ages?' · '+e(ages):'')+'</div>';
  const visual=x.category==='living'&&!x.photo?'':'<div class="visual">'+imageMarkup(x)+(badge?'<span class="flag '+(x.status==='bad'?'bad':'')+'">'+badge+'</span>':'')+'</div>';
  const photoSource=x.photoCaption?'<small class="official-photo-note">'+e(x.photoCaption)+'</small>':'';
  const review=reviewFold(x,'이용 후기 보기');
@@ -1491,6 +1520,7 @@ function renderSub(){
  const c=state.category;if(['fruit','prep','benefit','recommendations','playdate','compare'].includes(c)){$('#subnav').innerHTML='';return}
  const ordered=['전체',...(LISTING_SUBCATEGORIES[c]||new Set(getSubset().map(x=>x.sub)))];
  const allowed=new Set(getSubset().map(x=>x.sub));
+ if(c==='gear')allowed.add('놀이용품');
  const subs=ordered.filter(v=>v==='전체'||c==='outing'||allowed.has(v));
  $('#subnav').innerHTML=subs.map(v=>'<button type="button" class="'+((c==='outing'?state.kind:state.sub)===v?'on':'')+'" data-s="'+e(v)+'">'+e(v)+'</button>').join('');
  document.querySelectorAll('#subnav [data-s]').forEach(btn=>btn.onclick=()=>{if(c==='outing')state.kind=btn.dataset.s;else state.sub=btn.dataset.s;renderSub();renderContent()});
@@ -1673,13 +1703,13 @@ async function loadProductReviews(widget){
  feed.textContent='후기를 불러오는 중입니다…';
  try{
   const query=new URLSearchParams({category,title});
-  const res=await fetch('/api/product-reviews?'+query.toString());
+  const res=await fetch('/api/product-reviews?'+query.toString(),{headers:authorHeaders()});
   const data=await res.json();
   if(!res.ok)throw Error(data.error||'후기를 불러오지 못했습니다.');
   feed.innerHTML=data.items?.length?data.items.map(item=>{
    const day=item.created_at?new Date(item.created_at).toLocaleDateString('ko-KR'):'';
    const photo=item.has_photo?'<img class="user-photo" src="/api/review-photos/'+encodeURIComponent(item.id)+'" loading="lazy" alt="제품 사용자 후기 사진">':'';
-   return '<div class="product-review-entry"><div class="review-head"><strong>'+e(item.nickname||'익명')+'</strong><span class="sentiment '+(item.sentiment==='bad'?'bad':'')+'">'+reviewText(item.sentiment)+'</span><small>'+e(day)+'</small></div><p>'+e(item.body)+'</p>'+photo+'<button type="button" class="delete-review" data-id="'+e(item.id)+'">관리자 삭제</button></div>';
+   return '<div class="product-review-entry"><div class="review-head"><div class="review-byline"><strong>'+e(item.nickname||'익명')+'</strong><span class="sentiment '+(item.sentiment==='bad'?'bad':'')+'">'+reviewText(item.sentiment)+'</span></div><small>'+e(day)+'</small></div><p>'+e(item.body)+'</p>'+photo+'<button type="button" class="delete-review" data-id="'+e(item.id)+'" data-owned="'+Boolean(item.owned)+'">'+(item.owned?'내 후기 삭제':'관리자 삭제')+'</button></div>';
   }).join(''):'<div class="empty">아직 등록된 후기가 없어요. 첫 후기를 남겨주세요!</div>';
  }catch(err){feed.innerHTML='<div class="empty">'+e(err.message)+'</div>';}
 }
@@ -1718,7 +1748,7 @@ document.addEventListener('submit',async event=>{
    value.photo=await compressReviewPhoto(file);
    value.photo_consent=true;
   }
-  const res=await fetch('/api/product-reviews',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...value,category:widget.dataset.category,title:widget.dataset.title})});
+  const res=await fetch('/api/product-reviews',{method:'POST',headers:authorHeaders({'content-type':'application/json'}),body:JSON.stringify({...value,category:widget.dataset.category,title:widget.dataset.title})});
   const result=await res.json();if(!res.ok)throw Error(result.error||'등록에 실패했습니다.');
   form.reset();status.textContent='후기가 등록됐습니다.';await loadProductReviews(widget);await refreshReviewSummaries();loadHomeRecentReviews();
  }catch(err){status.textContent=err.message;}finally{button.disabled=false;}
@@ -1726,12 +1756,17 @@ document.addEventListener('submit',async event=>{
 document.addEventListener('click',async event=>{
  const button=event.target.closest?.('.delete-review');if(!button)return;
  const widget=button.closest('.product-review-widget');if(!confirm('이 후기를 삭제하시겠습니까?'))return;
- const secret=prompt('관리자 삭제 비밀번호를 입력해 주세요.');if(!secret)return;
+ const own=button.dataset.owned==='true';
+ const secret=own?'':prompt('관리자 삭제 비밀번호를 입력해 주세요.');
+ if(!own&&!secret)return;
  button.disabled=true;
  try{
-  const res=await fetch('/api/product-reviews/'+encodeURIComponent(button.dataset.id),{method:'DELETE',headers:{'x-admin-secret':secret}});
+  const headers=authorHeaders(secret?{'x-admin-secret':secret}:{});
+  const res=await fetch('/api/product-reviews/'+encodeURIComponent(button.dataset.id),{method:'DELETE',headers});
   const result=await res.json();if(!res.ok)throw Error(result.error||'삭제할 수 없습니다.');
   await loadProductReviews(widget);
+  await refreshReviewSummaries();
+  loadHomeRecentReviews();
  }catch(err){alert(err.message);button.disabled=false;}
 });
 
@@ -2030,13 +2065,17 @@ function shortReviewDate(timestamp){
 function recentReviewCard(review){
  const date=shortReviewDate(review.created_at);
  const time=date?' <time datetime="'+e(review.created_at)+'" class="recent-review-date">· '+date+'</time>':'';
- const photo=review.has_photo?'<img class="recent-review-photo" src="/api/review-photos/'+encodeURIComponent(review.id)+'" alt="방문자가 첨부한 제품 사진" loading="lazy">':'';
+ const listing=review.kind==='listing';
+ const src=listing?listingPhotoUrl(review.id):'/api/review-photos/'+encodeURIComponent(review.id);
+ const photo=review.has_photo?'<img class="recent-review-photo" src="'+e(src)+'" alt="'+e(review.product_title)+' 첨부 사진" loading="lazy">':'';
+ const categoryName=REC_CATEGORIES.find(([id])=>id===review.category)?.[1]||'추천';
+ const type=listing?'새 추천 · '+categoryName:reviewText(review.sentiment);
  const pressed=Boolean(review.helped);
  return '<article class="recent-item"><button type="button" class="recent-review-link" data-cat="'+e(review.category)+'" data-title="'+e(review.product_title)+'">'
-  +'<small>'+e(review.nickname||'익명')+' · '+reviewText(review.sentiment)+time+'</small><b>'+e(review.product_title)+'</b>'+photo+'<p>'+e(review.body)+'</p></button>'
-  +'<div class="recent-review-actions"><button type="button" class="recent-helpful" data-review-id="'+e(review.id)+'" aria-pressed="'+pressed+'"'+(pressed?' aria-disabled="true"':'')+'>'
+  +'<small>'+e(review.nickname||'익명')+' · '+e(type)+time+'</small><b>'+e(review.product_title)+'</b>'+photo+'<p>'+e(review.body)+'</p></button>'
+  +(listing?'':'<div class="recent-review-actions"><button type="button" class="recent-helpful" data-review-id="'+e(review.id)+'" aria-pressed="'+pressed+'"'+(pressed?' aria-disabled="true"':'')+'>'
   +'<span aria-hidden="true">👍</span> 도움됐어요! <span class="recent-helpful-count" aria-live="polite">'+(Number(review.helpful_count)||0)+'</span></button>'
-  +'<span class="recent-helpful-error" role="status"></span></div></article>';
+  +'<span class="recent-helpful-error" role="status"></span></div>')+'</article>';
 }
 async function markReviewHelpful(button){
  if(button.getAttribute('aria-disabled')==='true')return;
@@ -2057,8 +2096,8 @@ async function markReviewHelpful(button){
 async function loadHomeRecentReviews(){
  const root=document.querySelector('#homeRecentReviews');if(!root)return;
  try{
-  const res=await fetch('/api/recent-reviews',{cache:'no-store'});const d=await res.json();if(!res.ok)throw Error(d.error||'불러올 수 없습니다.');
-  root.innerHTML=d.items?.length?d.items.map(recentReviewCard).join(''):'<div class="recent-item"><b>첫 사용 후기를 기다리고 있어요</b><p>제품 카드를 열어 여러분의 경험을 남겨주세요.</p></div>';
+  const res=await fetch('/api/recent-reviews?include=listings',{cache:'no-store'});const d=await res.json();if(!res.ok)throw Error(d.error||'불러올 수 없습니다.');
+  root.innerHTML=d.items?.length?d.items.map(recentReviewCard).join(''):'<div class="recent-item"><b>첫 후기와 추천을 기다리고 있어요</b><p>제품이나 장소를 추천하고 이용 경험을 나눠 주세요.</p></div>';
   root.querySelectorAll('.recent-helpful').forEach(button=>button.onclick=()=>markReviewHelpful(button));
   root.querySelectorAll('.recent-review-link').forEach(btn=>btn.onclick=()=>{
    openCategory(btn.dataset.cat);
