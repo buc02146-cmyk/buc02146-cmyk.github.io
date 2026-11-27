@@ -3,6 +3,20 @@ const CATEGORIES=new Set(["grocery","clinic","medicine","gear","outing","prescho
 const H={"content-type":"application/json; charset=utf-8","cache-control":"no-store"};
 const reply=(v,status=200)=>new Response(JSON.stringify(v),{status,headers:H});
 const norm=(v,max)=>typeof v==="string"?v.trim().slice(0,max):"";
+const helpfulCookieName="sgbg_helpful";
+const helpfulTokenPattern=/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/;
+function helpfulBrowserToken(req){
+  const cookie=(req.headers.get("cookie")||"").split(";").map(value=>value.trim()).find(value=>value.startsWith(helpfulCookieName+"="));
+  const token=cookie?.slice(helpfulCookieName.length+1);
+  return helpfulTokenPattern.test(token)?token:null;
+}
+async function helpfulBrowserHash(token){
+  const bytes=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(token));
+  return Array.from(new Uint8Array(bytes),value=>value.toString(16).padStart(2,"0")).join("");
+}
+async function prepareHelpful(db){
+  await db.prepare("CREATE TABLE IF NOT EXISTS review_helpful_votes (review_id TEXT NOT NULL REFERENCES product_reviews(id) ON DELETE CASCADE, browser_hash TEXT NOT NULL, PRIMARY KEY(review_id,browser_hash))").run();
+}
 async function prepare(db){
   await db.prepare("CREATE TABLE IF NOT EXISTS recommendations (id TEXT PRIMARY KEY, category TEXT NOT NULL, title TEXT NOT NULL, url TEXT, reason TEXT NOT NULL, created_at TEXT NOT NULL, approved INTEGER NOT NULL DEFAULT 1, nickname TEXT NOT NULL DEFAULT '익명')").run();
   await db.prepare("CREATE TABLE IF NOT EXISTS product_reviews (id TEXT PRIMARY KEY, category TEXT NOT NULL, product_title TEXT NOT NULL, nickname TEXT NOT NULL DEFAULT '익명', body TEXT NOT NULL, sentiment TEXT NOT NULL DEFAULT 'good', created_at TEXT NOT NULL, approved INTEGER NOT NULL DEFAULT 1)").run();
@@ -31,9 +45,10 @@ export default {async fetch(req,env){
   const playdateJoin=url.pathname.match(/^\/api\/playdates\/([0-9a-fA-F-]{36})\/join$/);
   const summaryPath=url.pathname==="/api/review-summary";
   const recentPath=url.pathname==="/api/recent-reviews";
+  const helpfulPath=url.pathname.match(/^\/api\/product-reviews\/([0-9a-fA-F-]{36})\/helpful$/);
   const searchPath=url.pathname==="/api/search";
   const photoGet=url.pathname.match(/^\/api\/review-photos\/([0-9a-fA-F-]{36})$/);
-  if(!deleteMatch&&!productDelete&&!productPath&&!visitorPath&&!playdatePath&&!playdateDelete&&!playdateJoin&&!summaryPath&&!recentPath&&!searchPath&&!photoGet&&url.pathname!=="/api/recommendations"&&!isHealth)return env.ASSETS.fetch(req);
+  if(!deleteMatch&&!productDelete&&!productPath&&!visitorPath&&!playdatePath&&!playdateDelete&&!playdateJoin&&!summaryPath&&!recentPath&&!helpfulPath&&!searchPath&&!photoGet&&url.pathname!=="/api/recommendations"&&!isHealth)return env.ASSETS.fetch(req);
   if((deleteMatch||productDelete||playdateDelete)&&req.method!=="DELETE")return reply({error:"허용되지 않은 요청입니다."},405);
   if(deleteMatch||productDelete||playdateDelete){
     if(!env.ADMIN_DELETE_SECRET||env.ADMIN_DELETE_SECRET.length<8)return reply({error:"관리자 삭제 비밀번호가 설정되지 않았습니다."},503);
@@ -146,8 +161,41 @@ export default {async fetch(req,env){
     }
     if(recentPath){
       if(req.method!=="GET")return reply({error:"허용되지 않은 요청입니다."},405);
-      const rows=await env.DB.prepare("SELECT id,nickname,body,sentiment,created_at,category,product_title,CASE WHEN photo_data IS NULL THEN 0 ELSE 1 END AS has_photo FROM product_reviews WHERE approved=1 ORDER BY created_at DESC LIMIT 6").all();
-      return reply({items:rows.results||[]});
+      const existingToken=helpfulBrowserToken(req);
+      const token=existingToken||crypto.randomUUID();
+      const hash=await helpfulBrowserHash(token);
+      await prepareHelpful(env.DB);
+      const rows=await env.DB.prepare(`
+        SELECT r.id,r.nickname,r.body,r.sentiment,r.created_at,r.category,r.product_title,
+          r.photo_data IS NOT NULL AS has_photo,
+          (SELECT COUNT(*) FROM review_helpful_votes v WHERE v.review_id=r.id) AS helpful_count,
+          EXISTS(SELECT 1 FROM review_helpful_votes v WHERE v.review_id=r.id AND v.browser_hash=?) AS helped
+        FROM product_reviews r WHERE r.approved=1 ORDER BY r.created_at DESC LIMIT 6
+      `).bind(hash).all();
+      const headers=new Headers(H);
+      if(!existingToken&&(rows.results||[]).length){
+        headers.append("set-cookie",helpfulCookieName+"="+token+"; Max-Age=31536000; Path=/api; HttpOnly; Secure; SameSite=Lax");
+      }
+      return new Response(JSON.stringify({items:rows.results||[]}),{headers});
+    }
+    if(helpfulPath){
+      if(req.method!=="POST")return reply({error:"허용되지 않은 요청입니다."},405);
+      if(req.headers.get("origin")&&req.headers.get("origin")!==url.origin)return reply({error:"허용되지 않은 사이트입니다."},403);
+      const token=helpfulBrowserToken(req);
+      if(!token)return reply({error:"페이지를 새로고침한 뒤 다시 눌러 주세요."},409);
+      const id=helpfulPath[1];
+      const hash=await helpfulBrowserHash(token);
+      await prepareHelpful(env.DB);
+      await env.DB.prepare(`
+        INSERT OR IGNORE INTO review_helpful_votes (review_id,browser_hash)
+        SELECT id,? FROM product_reviews WHERE id=? AND approved=1
+      `).bind(hash,id).run();
+      const review=await env.DB.prepare(`
+        SELECT (SELECT COUNT(*) FROM review_helpful_votes v WHERE v.review_id=r.id) AS helpful_count
+        FROM product_reviews r WHERE r.id=? AND r.approved=1
+      `).bind(id).first();
+      if(!review)return reply({error:"후기를 찾을 수 없습니다."},404);
+      return reply({helpful_count:review.helpful_count,helped:true});
     }
     if(photoGet){
       if(req.method!=="GET")return reply({error:"허용되지 않은 요청입니다."},405);
