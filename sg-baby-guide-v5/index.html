@@ -748,7 +748,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 .homeLanding #heroAnimation .hero-speech::after{right:calc(50% - 8px)!important;left:auto!important}
 @media(max-width:650px){
  .homeLanding .hero-art-interactive{padding-top:69px!important}
- .homeLanding #heroAnimation .hero-speech{max-width:230px!important;font-size:12px!important}
+ .homeLanding #heroAnimation .hero-speech{font-size:12px!important}
 }
 @media(prefers-color-scheme:dark){
  :root{--ink:#faf6ff;--body:#e9dff3;--muted:#d7c7e6;--line:#675473;--white:#2e253a;--canvas:#17121f}
@@ -780,19 +780,18 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 .homeLanding #heroAnimation[data-speaker="1"] .hero-speech,
 .homeLanding #heroAnimation[data-speaker="2"] .hero-speech,
 .homeLanding #heroAnimation[data-speaker="3"] .hero-speech{
- left:clamp(77px,var(--baby-talk-x),calc(100% - 77px))!important;
+ left:var(--speech-center,var(--baby-talk-x))!important;
  right:auto!important;
  top:12px!important;
  bottom:auto!important;
  width:max-content!important;
  min-width:0!important;
- max-width:min(185px,85%)!important;
+ max-width:none!important;
  padding:10px 13px!important;
  border-radius:16px 16px 7px 16px!important;
  text-align:center!important;
- white-space:normal!important;
+ white-space:nowrap!important;
  line-height:1.45!important;
- overflow-wrap:break-word!important;
  transform:translate(-50%,12px) scale(.88)!important;
  transform-origin:50% 100%!important;
  pointer-events:none!important;
@@ -805,14 +804,12 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
  transform:translate(-50%,0) scale(1)!important;
 }
 .homeLanding #heroAnimation .hero-speech::after{
- right:calc(50% - 7px)!important;left:auto!important;
+ right:auto!important;left:calc(var(--speech-tail,50%) - 6px)!important;
 }
 @media(max-width:650px){
  .homeLanding #heroAnimation{padding-top:91px!important}
  .homeLanding #heroAnimation .hero-speech,
  .homeLanding #heroAnimation[data-speaker] .hero-speech{
-  left:clamp(65px,var(--baby-talk-x),calc(100% - 65px))!important;
-  max-width:min(145px,90%)!important;
   padding:9px 10px!important;
   font-size:11px!important;
  }
@@ -842,14 +839,12 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 #homeLanding .landing-card-copy{min-width:0;flex:1}
 #homeLanding .landing-card-eyebrow{
  display:inline-flex!important;align-items:center;white-space:nowrap;
- background:#e8d6f8!important;color:#7651ad!important;
- border:1px solid #dac0f0!important;border-radius:999px!important;
- padding:5px 11px!important;letter-spacing:.105em!important;
- font-size:10px!important;font-weight:850!important;line-height:1.5!important;
- margin:0 0 11px!important;
+ color:#7651ad;letter-spacing:.105em;
+ font-size:11px;font-weight:850;line-height:1.5;
+ margin:0 0 6px;
 }
 #homeLanding .landing-action-card h2{
- color:#3c2858!important;font-size:clamp(18px,2.05vw,23px)!important;
+ color:#3c2858!important;font-size:clamp(16px,1.65vw,20px)!important;
  font-weight:850!important;letter-spacing:-.052em!important;line-height:1.35!important;
  margin:0!important;padding:0!important;
 }
@@ -882,11 +877,23 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
  background:#f6effd!important;border:1px solid #ddcbea!important;
  color:#7655a1!important;border-radius:12px!important;
 }
-#homeLanding .landing-action-card.home-playdate .home-playdate-grid{display:none!important}
-#homeLanding .landing-action-card.home-playdate .home-playdate-head{display:contents!important}
-#homeLanding .landing-action-card.home-playdate .eyebrow{background:transparent!important;color:inherit!important}
-#homeLanding .landing-action-card.home-search{margin-top:19px!important}
-#homeLanding .landing-action-card.home-playdate{margin-bottom:7px!important}
+#homeLanding .landing-action-card.home-playdate{
+ background:linear-gradient(115deg,#eadbff,#fae6f4)!important;
+ border-color:#d9b9ef!important;
+ padding:clamp(22px,3vw,34px)!important;
+ box-shadow:0 14px 30px #6b429c24!important;
+}
+#homeLanding .home-playdate h2{font-size:clamp(23px,3vw,34px)!important}
+#homeLanding .home-playdate .landing-card-eyebrow{font-size:12px}
+#homeLanding .home-playdate .landing-card-copy p{font-size:14px!important}
+#homeLanding .home-playdate-recruiting{position:relative;z-index:1;margin-top:20px}
+#homeLanding .home-playdate-recruiting h3{font-size:15px;margin:0 0 8px}
+#homeLanding .home-playdate-grid{margin:0}
+#homeLanding .home-playdate-grid > p{grid-column:1 / -1;margin:0!important}
+#homeLanding .home-playdate-teaser{min-width:0;padding-right:33px;overflow-wrap:anywhere}
+#homeLanding .home-playdate-teaser:hover{border-color:#a87bd0}
+#homeLanding .home-playdate-teaser small{color:#715c88}
+#homeLanding .home-playdate-teaser .playdate-small-count{color:#7545a8!important}
 .playdate-formbox,.playdate-listbox{scroll-margin-top:95px}
 @media(max-width:820px){
  #homeLanding .landing-card-inner{align-items:flex-start;flex-direction:column;gap:15px}
@@ -894,7 +901,6 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 }
 @media(max-width:580px){
  #homeLanding .landing-action-card{padding:20px 19px!important;margin-top:13px!important;border-radius:19px!important}
- #homeLanding .landing-action-card h2{font-size:19px!important}
  #homeLanding .landing-action-card p{font-size:12.5px!important}
  #homeLanding .landing-card-actions{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
  #homeLanding .landing-card-actions button{width:100%;min-width:0;white-space:normal!important;text-align:center!important}
@@ -905,7 +911,12 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
   color:#f7eaff!important;background:linear-gradient(115deg,#2d233b 0%,#30243c 100%)!important;
   border-color:#5b4872!important;box-shadow:0 10px 28px rgba(0,0,0,.22)!important;
  }
- #homeLanding .landing-card-eyebrow{background:#49345f!important;border-color:#795795!important;color:#e7ccff!important}
+ #homeLanding .landing-card-eyebrow{color:#d6aafb}
+ #homeLanding .landing-action-card.home-playdate{background:linear-gradient(115deg,#3b2852,#3d2847)!important;border-color:#8a61ae!important}
+ #homeLanding .home-playdate-teaser strong{color:#f4e8ff}
+ #homeLanding .home-playdate-teaser .playdate-small-count{color:#e1baff!important}
+ #outings .age-badge{background:#46335d;border-color:#8568a4;color:#f6ebff!important}
+ #outings .age-badge.bad{background:#553544;border-color:#a8788c;color:#ffe5ed!important}
  #homeLanding .landing-action-card h2{color:#fbf4ff!important}
  #homeLanding .landing-action-card p{color:#e5d7f0!important}
  #homeLanding .landing-card-actions .landing-outline-btn{background:#382a49!important;color:#f0dfff!important;border-color:#805fa5!important}
@@ -913,6 +924,24 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
  #homeLanding .landing-action-card.home-search .home-search-row input{background:#352940!important;color:#fff7ff!important;border-color:#745a8a!important}
  #homeLanding .landing-action-card.home-search .home-search-row button{background:#42304e!important;color:#ecd9ff!important;border-color:#745a8a!important}
 }
+/* Decorative stardust inside the hero. */
+.hero-stardust{position:absolute;inset:0;overflow:hidden;border-radius:inherit;pointer-events:none}
+.hero-stardust span{
+ position:absolute;left:var(--start);top:-12px;color:#8c57ba;
+ font-size:var(--size,10px);opacity:0;
+ animation:hero-stardust-fall var(--duration) var(--delay) linear infinite;
+}
+@keyframes hero-stardust-fall{
+ 0%{transform:translate(0,0);opacity:0}
+ 12%,65%{opacity:.44}
+ 100%{transform:translate(var(--drift),var(--hero-fall-distance,330px)) rotate(70deg);opacity:0}
+}
+@supports (height:1cqh){
+ .hero-stardust{container-type:size}
+ .hero-stardust span{--hero-fall-distance:calc(100cqh + 12px)}
+}
+@media(prefers-color-scheme:dark){.hero-stardust span{color:#e3bdff}}
+@media(prefers-reduced-motion:reduce){.hero-stardust{display:none}.hero-stardust span{animation:none}}
 </style>
 </head>
 <body>
@@ -921,6 +950,15 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 <main class="wrap">
 <section id="homeLanding" class="homeLanding">
  <div class="hero">
+  <div class="hero-stardust" aria-hidden="true">
+    <span style="--start:6%;--duration:8s;--delay:-2s;--drift:18px;--size:8px">✦</span>
+    <span style="--start:19%;--duration:11s;--delay:-7s;--drift:-10px">✧</span>
+    <span style="--start:34%;--duration:9s;--delay:-3s;--drift:20px;--size:7px">✦</span>
+    <span style="--start:51%;--duration:10s;--delay:-8s;--drift:-16px">✧</span>
+    <span style="--start:64%;--duration:9s;--delay:-1s;--drift:14px;--size:8px">✦</span>
+    <span style="--start:79%;--duration:11s;--delay:-5s;--drift:-18px;--size:11px">✧</span>
+    <span style="--start:94%;--duration:8s;--delay:-4s;--drift:-19px">✦</span>
+  </div>
   <div class="hero-copy">
     <div class="eyebrow"><span class="eyebrow-dot"></span> OUR LITTLE SINGAPORE</div>
     <h1>싱가포르<br class="hero-mobile-break"> 육아백과</h1>
@@ -936,6 +974,18 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
   </div>
 </div>
 
+ <section class="landing-action-card home-playdate" aria-labelledby="homePlaydateTitle">
+  <div class="landing-card-inner"><div class="landing-card-copy"><span class="landing-card-eyebrow">MEET &amp; PLAY</span>
+   <h2 id="homePlaydateTitle">🧸 곧 열리는 플레이데이트</h2>
+   <p>처음 참여하는 분도 환영해요 💜<br>가까운 동네에서 우리 아이 또래 친구도 만나고, 엄마·아빠도 편하게 소통해 보세요.</p></div>
+   <div class="landing-card-actions"><button id="homePlaydateOpen" class="landing-primary-btn" type="button">모임 모집하기 <span aria-hidden="true">↗</span></button>
+    <button id="homePlaydateBrowse" class="landing-outline-btn" type="button">모임 둘러보기 <span aria-hidden="true">↗</span></button></div>
+  </div>
+  <div class="home-playdate-recruiting">
+   <h3>모집 중인 모임</h3>
+   <div id="homePlaydateList" class="home-playdate-grid" aria-live="polite"><p>모임을 불러오는 중입니다…</p></div>
+  </div>
+ </section>
  <section class="landing-action-card home-search" aria-labelledby="homeSearchHeading">
   <div class="landing-card-inner">
    <div class="landing-card-copy">
@@ -947,17 +997,9 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
  </section>
  <section class="landing-action-card quick-recommend" aria-labelledby="quickRecommendHeading">
   <div class="landing-card-inner"><div class="landing-card-copy"><span class="landing-card-eyebrow">SHARE YOUR FAVORITES</span>
-   <h2 id="quickRecommendHeading">추천하고 싶은 장소나 물건이 있나요?</h2>
+   <h2 id="quickRecommendHeading">💡 추천하고 싶은 장소나 물건이 있나요?</h2>
    <p>우리 가족이 좋았던 제품, 병원, 키즈카페, 외출 장소를 함께 나눠 주세요.</p></div>
    <div class="landing-card-actions"><button id="quickRecommendOpen" class="landing-primary-btn" type="button">추천 남기기 <span aria-hidden="true">↗</span></button></div>
-  </div>
- </section>
- <section class="landing-action-card home-playdate" aria-labelledby="homePlaydateTitle">
-  <div class="landing-card-inner"><div class="landing-card-copy"><span class="landing-card-eyebrow">MEET &amp; PLAY</span>
-   <h2 id="homePlaydateTitle">🧸 곧 열리는 플레이데이트</h2>
-   <p>처음 참여하는 분도 환영해요 💜<br>가까운 동네에서 우리 아이 또래 친구도 만나고, 엄마·아빠도 편하게 소통해 보세요.</p></div>
-   <div class="landing-card-actions"><button id="homePlaydateOpen" class="landing-primary-btn" type="button">모임 모집하기 <span aria-hidden="true">↗</span></button>
-    <button id="homePlaydateBrowse" class="landing-outline-btn" type="button">모임 둘러보기 <span aria-hidden="true">↗</span></button></div>
   </div>
  </section>
  <div class="home-heading"><h2>카테고리 둘러보기</h2><p>여덟 가지 주제로 편하게 찾아보세요</p></div>
@@ -1075,6 +1117,7 @@ function returnHome(updateHistory=true){
  if(updateHistory!==false&&location.hash)history.pushState({category:null},'',location.pathname+location.search);
  $('#detail').classList.remove('visible');
  $('#homeLanding').classList.remove('hide');
+ showPlaydateHome();
  $('#topHome').classList.remove('visible');
  window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -1473,9 +1516,14 @@ async function fetchPlaydates(){
  const r=await fetch('/api/playdates',{cache:'no-store'});const j=await r.json();if(!r.ok)throw Error(j.error||'모임을 불러오지 못했습니다.');
  playdateCache=(j.items||[]).filter(futurePlaydate);return playdateCache;
 }
+function playdateAttendance(p){
+ const filled=Math.max(1,Number(p.joined_count||1));
+ const cap=Math.max(2,Number(p.capacity||2));
+ return {filled,cap,full:filled>=cap};
+}
 function playdateCard(p,home=false){
  const href='https://open.kakao.com/o/gKHZMCYi';
- const filled=Math.max(1,Number(p.joined_count||1)),cap=Math.max(2,Number(p.capacity||2)),full=filled>=cap;
+ const {filled,cap,full}=playdateAttendance(p);
  if(home)return '<button type="button" class="home-playdate-teaser" data-playdate-open="1"><strong>'+e(p.place)+'</strong><small>📅 '+e(dateLabel(p.starts_at))+'</small><small>👶 '+p.min_month+'–'+p.max_month+'M · '+e(p.region)+'</small><small class="playdate-small-count">'+(full?'모집 마감':filled+'/'+cap+'명 모집 중')+'</small></button>';
  const names=(p.participants||[]).map(x=>'<span class="participant-name">'+e(x)+'</span>').join('');
  return '<article class="playdate-item"><h4>📍 '+e(p.place)+'</h4><div class="playdate-pills"><span>📅 '+e(dateLabel(p.starts_at))+'</span><span>👶 '+p.min_month+'–'+p.max_month+'M</span><span>👥 '+filled+'/'+cap+'명'+(full?' · 모집 마감':' · 모집 중')+'</span><span>'+e(p.region)+'</span></div>'
@@ -1488,9 +1536,11 @@ async function showPlaydateHome(){
  const el=document.querySelector('#homePlaydateList');if(!el)return;
  try{
   const posts=await fetchPlaydates();
-  el.innerHTML=posts.slice(0,3).map(p=>playdateCard(p,true)).join('')||'<div class="home-playdate-teaser"><strong>첫 플레이데이트를 모집해 보세요 🧸</strong><small>동네 친구를 만나는 첫 모임을 직접 열 수 있어요.</small></div>';
-  el.querySelectorAll('[data-playdate-open]').forEach(b=>b.onclick=()=>openCategory('playdate'));
- }catch(err){el.innerHTML='<p class="muted">'+e(err.message)+'</p>'}
+  const now=Date.now();
+  const recruiting=posts.filter(p=>Date.parse(p.starts_at+'+08:00')>now&&!playdateAttendance(p).full);
+  el.innerHTML=recruiting.map(p=>playdateCard(p,true)).join('')||'<p>지금 모집 중인 모임이 없어요.</p>';
+  el.querySelectorAll('[data-playdate-open]').forEach(button=>button.onclick=browseHomePlaydates);
+ }catch{el.innerHTML='<p>모임을 불러오지 못했어요. 잠시 후 다시 확인해 주세요.</p>'}
 }
 let pendingPlaydateId=null;
 function openPlaydateJoin(p){
@@ -1615,12 +1665,16 @@ function renderComparison(){
  first.onchange=update;second.onchange=update;update();
  root.querySelectorAll('[data-compare]').forEach(button=>button.onclick=()=>{compareType=button.dataset.compare;renderComparison()});
 }
+function browseHomePlaydates(){
+ openCategory('playdate');
+ document.querySelector('.playdate-listbox')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
 function mountHomeWidgets(){
  setupGlobalSearch();
  const c=document.querySelector('#homePlaydateOpen');
  if(c)c.onclick=()=>{openCategory('playdate');const form=document.querySelector('#playdateForm');if(form)form.scrollIntoView({behavior:'smooth',block:'start'});};
  const browse=document.querySelector('#homePlaydateBrowse');
- if(browse)browse.onclick=()=>{openCategory('playdate');const list=document.querySelector('.playdate-listbox');if(list)list.scrollIntoView({behavior:'smooth',block:'start'});};
+ if(browse)browse.onclick=browseHomePlaydates;
  const recommend=document.querySelector('#quickRecommendOpen');if(recommend)recommend.onclick=()=>openCategory('recommendations');
  showPlaydateHome();
  loadHomeRecentReviews();
@@ -1637,6 +1691,24 @@ function initHeroGreeting(){
  };
  if(!art||!speech)return;
  const phrases=['꺄르륵~!','우리 엄마 최고~!','나 오늘 바빠. 노느라!','잠은 내일 잘게요','소꿉놀이 미슐랭 3스타!','방금 제가 회의 주재했어요','오늘 간식은 두 번인가요?','아빠, 장난감 정리 좀요','엄마 지갑 조심해~','저는 아직 퇴근 안 했어요','지금 제일 중요한 건 까까','응애? 저 퇴근했는데요','제가 이 집의 팀장이에요','엄마, 나랑 놀면 무료야','우리 집 주식은 우유!','기저귀 갈 때 협상해요','엄마가 나보다 귀여울 순 없어','이 구역의 소꿉놀이 왕!','울다가 웃는 게 특기예요','또 놀자! 🧸','정리요? 그게 뭔데요?','오늘도 인생 최고로 신나요','쉿, 장난감 회의 중!','꺄아~ 엄마 최고~','이거 다 내 친구야~','엄마, 저랑 약속 잡으셨나요?','오늘 메뉴는 공기 파스타','아기는 원래 바쁜 법!'];
+ const hero=art.closest('.hero');
+ const positionSpeech=()=>{
+  const artBounds=art.getBoundingClientRect();
+  if(!artBounds.width)return;
+  const heroBounds=hero.getBoundingClientRect();
+  const speakerPercent=parseFloat(getComputedStyle(art).getPropertyValue('--baby-talk-x'));
+  const speakerX=artBounds.width*speakerPercent/100;
+  const halfWidth=speech.offsetWidth/2;
+  const minCenter=heroBounds.left-artBounds.left+8+halfWidth;
+  const maxCenter=heroBounds.right-artBounds.left-8-halfWidth;
+  const center=Math.min(Math.max(speakerX,minCenter),maxCenter);
+  const tail=Math.min(Math.max(speakerX-center+halfWidth,12),2*halfWidth-12);
+  speech.style.setProperty('--speech-center',center+'px');
+  speech.style.setProperty('--speech-tail',tail+'px');
+ };
+ const speechLayout=new ResizeObserver(positionSpeech);
+ speechLayout.observe(hero);
+ speechLayout.observe(speech);
  let lastBaby=-1;
  const reduceMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true;
  let count=0,clearSpeech=0,clearEffects=0,interval=0;
@@ -1648,6 +1720,7 @@ function initHeroGreeting(){
   const phrase=phrases[Math.floor(Math.random()*phrases.length)];
   speech.textContent=phrase;count++;
   art.dataset.speaker=String(who);
+  positionSpeech();
   speech.classList.add('is-visible');
   if(!reduceMotion){
    art.classList.add('is-bouncing');
