@@ -301,12 +301,72 @@ function renderBenefit(){
  $('#benefitPanel').innerHTML='<div class="benefit-card"><h3>🇰🇷 부모급여 계산기</h3><p>출생월과 출입국 날짜를 입력하면 월별 수급 예상과 입국 일정 계산을 바로 확인할 수 있어요.</p><iframe title="부모급여 계산기" src="./planner/" class="planner-frame" loading="lazy"></iframe><small>계산 결과는 예상치입니다. 실제 지급 여부는 담당 기관에 확인해 주세요. 온라인 동기화 기능은 제공하지 않습니다.</small></div>';
 }
 const REC_CATEGORIES=[["grocery","장보기"],["gear","육아용품"],["outing","가볼만한 곳"],["clinic","병원·소아과"],["medicine","상비약"],["preschool","어린이집·교육"],["living","생활 정보"]];
+
+let adminDeleteMode=false;
 async function renderRecommendations(){
- const node=$('#recPanel');node.innerHTML='<div class="rec-layout"><div class="rec-formbox"><h3>💌 추천 글 남기기</h3><p>좋았던 제품이나 장소, 유용한 정보를 간단히 공유해 주세요.</p><form id="recForm"><label>카테고리<select name="category" required>'+REC_CATEGORIES.map(([v,n])=>'<option value="'+v+'">'+n+'</option>').join('')+'</select></label><label>닉네임<input name="nickname" maxlength="24" minlength="2" required placeholder="예: 토끼맘"></label><label>제품 또는 장소 이름<input name="title" maxlength="90" required placeholder="예: Mustela 로션"></label><label>추천 링크 (선택)<input name="url" type="url" maxlength="600" placeholder="https://..."></label><label>추천하는 이유<textarea name="reason" rows="4" maxlength="400" minlength="8" required placeholder="어떤 점이 좋았는지 알려주세요"></textarea></label><input name="website" class="honeypot" tabindex="-1" autocomplete="off"><button type="submit">추천 글 올리기</button><p class="source-note">글은 공개될 수 있으니 이름, 연락처, 아이의 개인정보는 적지 마세요.</p><div id="recStatus" aria-live="polite"></div></form></div><div class="rec-listbox"><h3>함께 모은 추천</h3><div id="recItems">추천 글을 불러오는 중입니다…</div></div></div>';
- const form=$('#recForm');form.onsubmit=async ev=>{ev.preventDefault();const btn=form.querySelector('button[type=submit]');btn.disabled=true;$('#recStatus').textContent='등록 중…';const data=Object.fromEntries(new FormData(form));try{const res=await fetch('/api/recommendations',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(data)});const j=await res.json();if(!res.ok)throw Error(j.error||'등록하지 못했습니다.');$('#recStatus').textContent='추천 글이 등록되었습니다.';form.reset();loadRecommendations()}catch(err){$('#recStatus').textContent=err.message}finally{btn.disabled=false}};
- loadRecommendations();
+ adminDeleteMode=false;
+ const node=$('#recPanel');
+ node.innerHTML='<div class="rec-layout"><div class="rec-formbox"><h3>추천 글 남기기</h3><p>좋았던 제품이나 장소를 공유해 주세요. 다른 가족들에게 도움이 됩니다.</p><form id="recForm">'
+ +'<label>카테고리<select name="category" required>'+REC_CATEGORIES.map(([id,name])=>'<option value="'+id+'">'+name+'</option>').join('')+'</select></label>'
+ +'<label>닉네임<input name="nickname" maxlength="24" minlength="2" required placeholder="예: 토끼맘" autocomplete="nickname"></label>'
+ +'<label>제품 · 장소명<input name="title" maxlength="90" required placeholder="예: Mustela 로션"></label>'
+ +'<label>추천 링크 <span style="font-weight:400">(선택)</span><input name="url" type="url" maxlength="600" placeholder="https://..."></label>'
+ +'<label>추천 이유<textarea name="reason" rows="4" maxlength="400" minlength="8" required placeholder="사용해 보니 어떤 점이 좋았나요?"></textarea></label>'
+ +'<input name="website" class="honeypot" tabindex="-1" autocomplete="off">'
+ +'<button type="submit">추천 등록하기</button><div class="source-note">작성한 닉네임과 추천 내용은 공개됩니다. 아이의 실명·연락처 등 개인정보는 적지 말아주세요.</div><div id="recStatus" aria-live="polite"></div></form></div>'
+ +'<div class="rec-listbox"><h3>모두의 추천</h3><p>방문자가 공유한 추천을 최신순으로 볼 수 있습니다.</p><div id="recItems">추천 글을 불러오는 중입니다…</div><div class="admin-tools"><button type="button" id="adminToggle" class="admin-toggle">관리자 · 글 관리</button><span class="admin-hint">삭제 권한은 관리자에게만 있습니다.</span></div><div id="adminStatus" aria-live="polite"></div></div></div>';
+ const form=$('#recForm');
+ form.onsubmit=async ev=>{
+  ev.preventDefault();const button=form.querySelector('button[type="submit"]');button.disabled=true;
+  $('#recStatus').textContent='추천을 등록하고 있어요…';
+  try{
+   const values=Object.fromEntries(new FormData(form));
+   const res=await fetch('/api/recommendations',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(values)});
+   const data=await res.json();
+   if(!res.ok)throw Error(data.error||'등록할 수 없습니다.');
+   $('#recStatus').textContent='추천 글이 등록됐습니다!';form.reset();await loadRecommendations();
+  }catch(err){$('#recStatus').textContent=err.message}finally{button.disabled=false}
+ };
+ $('#adminToggle').onclick=()=>{
+  adminDeleteMode=!adminDeleteMode;$('#adminToggle').textContent=adminDeleteMode?'관리 종료':'관리자 · 글 관리';
+  $('#adminStatus').textContent=adminDeleteMode?'삭제하려는 글을 선택하면 관리자 비밀번호를 요청합니다.':'';
+  loadRecommendations();
+ };
+ await loadRecommendations();
 }
-async function loadRecommendations(){const out=$('#recItems');try{const res=await fetch('/api/recommendations');const j=await res.json();if(!res.ok)throw Error(j.error||'불러올 수 없습니다.');out.innerHTML=(j.items||[]).map(p=>'<article class="rec-post"><span>'+e(REC_CATEGORIES.find(([c])=>c===p.category)?.[1]||'추천')+'</span><h4>'+e(p.title)+'</h4><div class="rec-post-by">작성자 · '+e(p.nickname||'익명')+'</div><p>'+e(p.reason)+'</p>'+(p.url?'<a href="'+e(p.url)+'" target="_blank" rel="nofollow noopener noreferrer">자세히 보기 ↗</a>':'')+'</article>').join('')||'<p class="empty">아직 등록된 추천 글이 없어요. 첫 번째 추천을 남겨주세요.</p>'}catch(err){out.innerHTML='<p class="empty">'+e(err.message)+'</p>';}}
+async function loadRecommendations(){
+ const out=$('#recItems');
+ if(!out)return;
+ try{
+  const res=await fetch('/api/recommendations'),data=await res.json();
+  if(!res.ok)throw Error(data.error||'추천 글을 불러올 수 없습니다.');
+  const posts=data.items||[];
+  out.innerHTML=posts.length?posts.map(p=>{
+   const type=e(REC_CATEGORIES.find(([id])=>id===p.category)?.[1]||'추천');
+   const link=p.url?'<a href="'+e(p.url)+'" target="_blank" rel="nofollow noopener noreferrer">상품 · 장소 링크 ↗</a>':'';
+   const erase=adminDeleteMode?'<button type="button" class="delete-post" data-delete="'+e(p.id)+'" aria-label="'+e(p.title)+' 글 삭제">삭제</button>':'';
+   const date=p.created_at?new Date(p.created_at).toLocaleDateString('ko-KR'):'';
+   return '<article class="rec-post"><span>'+type+' · '+e(date)+'</span><h4>'+e(p.title)+'</h4><div class="rec-post-by">by '+e(p.nickname||'익명')+'</div><p>'+e(p.reason)+'</p><div class="admin-row" style="margin-top:10px">'+link+erase+'</div></article>';
+  }).join(''):'<div class="empty">아직 추천 글이 없습니다. 첫 추천을 남겨주세요!</div>';
+  if(adminDeleteMode){
+   out.querySelectorAll('[data-delete]').forEach(button=>button.onclick=async()=>{
+    const id=button.dataset.delete;
+    if(!window.confirm('이 추천 글을 삭제하시겠습니까?'))return;
+    const pass=window.prompt('Cloudflare에 설정한 관리자 삭제 비밀번호를 입력해 주세요.');
+    if(!pass)return;
+    button.disabled=true;
+    try{
+     const res=await fetch('/api/recommendations/'+encodeURIComponent(id),{method:'DELETE',headers:{'x-admin-secret':pass}});
+     const data=await res.json();
+     if(!res.ok)throw Error(data.error||'삭제할 수 없습니다.');
+     $('#adminStatus').textContent='선택한 글을 삭제했습니다.';
+     await loadRecommendations();
+    }catch(err){$('#adminStatus').textContent=err.message;button.disabled=false}
+   });
+  }
+ }catch(err){out.innerHTML='<div class="empty">'+e(err.message)+'</div>'}
+}
+
 mountCats();if(['grocery','clinic','medicine','gear','outing','preschool','fruit','living','prep','benefit','recommendations'].includes(location.hash.slice(1)))openCategory(location.hash.slice(1));
 </script>
 </body></html>
