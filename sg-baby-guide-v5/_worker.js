@@ -26,7 +26,7 @@ export default {async fetch(req,env){
     let mismatch=0;for(let i=0;i<expected.length;i++)mismatch|=expected[i]^actual[i];
     if(mismatch!==0)return reply({error:"관리자 비밀번호가 올바르지 않습니다."},403);
   }
-  if(!env.DB)return reply(isHealth?{database:"not_connected",note:"Cloudflare Pages에서 DB 바인딩을 저장한 뒤 새 배포를 시작하세요."}:{error:"현재 배포에 DB 연결이 적용되지 않았습니다. Cloudflare Settings → Bindings에서 DB를 저장하고 Deployments에서 새로 배포해 주세요."},503);
+  if(!env.DB)return reply(isHealth?{database:"not_connected",admin_delete_password:(env.ADMIN_DELETE_SECRET&&env.ADMIN_DELETE_SECRET.length>=16)?"configured":"not_configured",note:"Cloudflare Pages에서 DB 바인딩을 저장한 뒤 새 배포를 시작하세요."}:{error:"현재 배포에 DB 연결이 적용되지 않았습니다. Cloudflare Settings → Bindings에서 DB를 저장하고 Deployments에서 새로 배포해 주세요."},503);
   try{
     await prepare(env.DB);
     if(deleteMatch){
@@ -35,7 +35,7 @@ export default {async fetch(req,env){
       if((result.meta?.changes||0)===0)return reply({error:"삭제할 글을 찾을 수 없습니다."},404);
       return reply({ok:true,deleted:itemId});
     }
-    if(isHealth)return reply({database:"connected",table:"ready"});
+    if(isHealth)return reply({database:"connected",table:"ready",admin_delete_password:(env.ADMIN_DELETE_SECRET&&env.ADMIN_DELETE_SECRET.length>=16)?"configured":"not_configured"});
     if(req.method==="GET"){
       const rows=await env.DB.prepare("SELECT id,category,title,url,reason,created_at,nickname FROM recommendations WHERE approved=1 ORDER BY created_at DESC LIMIT 150").all();
       return reply({items:rows.results||[]});
