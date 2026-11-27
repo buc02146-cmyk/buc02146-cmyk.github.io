@@ -212,7 +212,7 @@ function oldRenderFruits(){const max={'all':90,'parents':90,'0-6m':5,'6-12m':11,
 
 function renderPlaces(){
  const entries=filterRecords(),mapped=entries.filter(x=>x.lat!=null&&x.lng!=null),other=entries.filter(x=>x.lat==null||x.lng==null);
- $('#locations').innerHTML=(mapped.map((x,i)=>locationHTML(x,i+1))+other.map(x=>locationHTML(x,null))).join('')||'<div class="empty">선택하신 조건에 맞는 장소가 없습니다. 지역이나 월령을 바꿔보세요.</div>';
+ $('#locations').innerHTML=[...mapped.map((x,i)=>locationHTML(x,i+1)),...other.map(x=>locationHTML(x,null))].join('')||'<div class="empty">선택하신 조건에 맞는 장소가 없습니다. 지역이나 월령을 바꿔보세요.</div>';
  const zone=state.region;
  $('#regionResultLabel').textContent=(zone==='All'?'전체 지역':zone)+' · '+entries.length+'곳';
  document.querySelectorAll('.map-region').forEach(el=>{
