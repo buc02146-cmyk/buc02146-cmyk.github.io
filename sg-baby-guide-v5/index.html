@@ -394,7 +394,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 .topbar{box-shadow:0 3px 18px rgba(63,35,105,.045)}
 .site-logo span{background:#f2e6ff;color:#8458bd}
 .topnote{color:#9c90ac}
-.homeLanding .hero{background:radial-gradient(circle at 96% 15%,#f9cdd997 0 10px,transparent 12px),radial-gradient(circle at 92% 24%,#ffe4a58c 0 6px,transparent 7px),linear-gradient(110deg,#eadcfb 0%,#f1e7fc 55%,#fbe5f1 100%)!important;border-color:#dfcdf0;box-shadow:0 24px 48px rgba(91,60,154,.12)}
+.homeLanding .hero{background:linear-gradient(180deg,#c597ed80 0%,#edc3f151 28%,transparent 66%),radial-gradient(circle at 96% 15%,#f9cdd997 0 10px,transparent 12px),radial-gradient(circle at 92% 24%,#ffe4a58c 0 6px,transparent 7px),linear-gradient(110deg,#eadcfb 0%,#f1e7fc 55%,#fbe5f1 100%)!important;border-color:#dfcdf0;box-shadow:0 24px 48px rgba(91,60,154,.12)}
 .homeLanding .hero::before,.homeLanding .hero::after{display:none!important}
 .homeLanding .hero h1{color:#36244c;letter-spacing:-.08em}
 .homeLanding .hero .eyebrow{background:rgba(255,255,255,.8);color:#7a59b6;box-shadow:0 3px 13px rgba(103,73,151,.055)}
@@ -636,9 +636,13 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 .home-recent{position:relative}
 .home-recent:before{content:'✳';color:#d7b7ed;font-size:30px;position:absolute;top:0;right:3%;pointer-events:none;opacity:.75}
 @media(max-width:650px){
- .home-recent .home-heading{flex-direction:column;align-items:flex-start;gap:4px}
- .home-recent .home-heading:before{display:none}
- .home-recent .home-heading h2,.home-recent .home-heading p{line-height:1.45;word-break:keep-all}
+ .home-recent .home-heading,.home-categories-heading{flex-direction:column;align-items:flex-start;gap:4px}
+ .home-recent .home-heading::before,.home-categories-heading::before,.home-categories-heading h2::before{display:none}
+ .home-recent .home-heading h2,.home-recent .home-heading p,.home-categories-heading h2,.home-categories-heading p{line-height:1.45;word-break:keep-all}
+ .home-categories-heading{--category-text-inset:1.85rem}
+ .home-categories-heading h2{display:flex;align-items:baseline}
+ .category-heading-icon{flex:0 0 var(--category-text-inset)}
+ .home-categories-heading p{margin-inline-start:var(--category-text-inset)}
 }
 @media(max-width:760px){
  .homeLanding .hero{padding:30px 22px 34px!important}
@@ -675,7 +679,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
  .header-actions .visitor-count{background:#352747!important;color:#e1ccf9!important;border-color:#634d7b!important}
  .header-actions .visitor-count strong{color:#f4e6ff!important}
  .home-link{background:#352843!important;color:#ead9ff!important;border:1px solid #5c4770!important}
- .homeLanding .hero{background:linear-gradient(120deg,#30213d,#3d2748 58%,#382435)!important;border-color:#655078!important;box-shadow:0 19px 45px #0004}
+ .homeLanding .hero{background:linear-gradient(180deg,#8659b070 0%,#9c5ca434 31%,transparent 66%),linear-gradient(120deg,#30213d,#3d2748 58%,#382435)!important;border-color:#655078!important;box-shadow:0 19px 45px #0004}
  .homeLanding .hero h1{color:#f4eaff!important}
  .homeLanding .hero p{color:#ddcdea!important}
  .homeLanding .hero .eyebrow{background:#3c2a4e!important;color:#dbbaf7!important;border-color:#6d507d!important}
@@ -966,208 +970,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 <main class="wrap">
 <section id="homeLanding" class="homeLanding">
  <div class="hero">
-  <div class="hero-stardust" aria-hidden="true">
-    <span style="--start:3%;--duration:7s;--delay:-1s;--drift:16px;--size:14px;--depth:59">✦</span>
-    <span style="--start:8%;--duration:9s;--delay:-4s;--drift:-9px;--size:7px;--depth:65">•</span>
-    <span style="--start:13%;--duration:8s;--delay:-6s;--drift:11px;--size:12px;--depth:68">✧</span>
-    <span style="--start:18%;--duration:7s;--delay:-2s;--drift:-12px;--size:9px;--depth:56">✦</span>
-    <span style="--start:23%;--duration:10s;--delay:-5s;--drift:16px;--size:10px;--depth:73">✧</span>
-    <span style="--start:28%;--duration:8s;--delay:-1s;--drift:13px;--size:8px;--depth:61">•</span>
-    <span style="--start:33%;--duration:9s;--delay:-7s;--drift:-14px;--size:15px;--depth:68">✦</span>
-    <span style="--start:38%;--duration:7s;--delay:-3s;--drift:13px;--size:9px;--depth:55">✧</span>
-    <span style="--start:43%;--duration:9s;--delay:-2s;--drift:-12px;--size:8px;--depth:63">✦</span>
-    <span style="--start:48%;--duration:8s;--delay:-5s;--drift:18px;--size:11px;--depth:72">✧</span>
-    <span style="--start:53%;--duration:7s;--delay:-1s;--drift:-11px;--size:8px;--depth:58">•</span>
-    <span style="--start:58%;--duration:10s;--delay:-4s;--drift:13px;--size:14px;--depth:69">✦</span>
-    <span style="--start:63%;--duration:8s;--delay:-6s;--drift:12px;--size:8px;--depth:60">✧</span>
-    <span style="--start:68%;--duration:7s;--delay:-2s;--drift:-13px;--size:11px;--depth:65">✦</span>
-    <span style="--start:73%;--duration:9s;--delay:-3s;--drift:16px;--size:8px;--depth:72">•</span>
-    <span style="--start:78%;--duration:8s;--delay:-1s;--drift:-13px;--size:15px;--depth:59">✧</span>
-    <span style="--start:83%;--duration:10s;--delay:-5s;--drift:12px;--size:8px;--depth:70">✦</span>
-    <span style="--start:88%;--duration:7s;--delay:-2s;--drift:-15px;--size:12px;--depth:61">✦</span>
-    <span style="--start:93%;--duration:9s;--delay:-6s;--drift:-18px;--size:7px;--depth:64">•</span>
-    <span style="--start:97%;--duration:7s;--delay:-3s;--drift:-21px;--size:12px;--depth:54">✧</span>
-    <span style="--start:4.6%;--duration:6.7s;--delay:-3.19s;--drift:-16px;--size:13px;--depth:51">✧</span>
-    <span style="--start:9.6%;--duration:9.3s;--delay:-7.23s;--drift:9px;--size:6px;--depth:57">•</span>
-    <span style="--start:14.6%;--duration:8.9s;--delay:-0.74s;--drift:-11px;--size:11px;--depth:60">✦</span>
-    <span style="--start:19.6%;--duration:6.7s;--delay:-4.15s;--drift:12px;--size:8px;--depth:48">✧</span>
-    <span style="--start:24.6%;--duration:10.3s;--delay:-8.58s;--drift:-16px;--size:9px;--depth:65">•</span>
-    <span style="--start:29.6%;--duration:8.9s;--delay:-4.08s;--drift:-13px;--size:7px;--depth:53">✦</span>
-    <span style="--start:34.6%;--duration:8.7s;--delay:-0.97s;--drift:14px;--size:14px;--depth:60">✧</span>
-    <span style="--start:39.6%;--duration:7.3s;--delay:-5.56s;--drift:-13px;--size:8px;--depth:47">•</span>
-    <span style="--start:44.6%;--duration:9.9s;--delay:-5.50s;--drift:12px;--size:7px;--depth:55">✦</span>
-    <span style="--start:49.6%;--duration:7.7s;--delay:-7.38s;--drift:-18px;--size:10px;--depth:64">✧</span>
-    <span style="--start:54.6%;--duration:7.3s;--delay:-3.48s;--drift:11px;--size:7px;--depth:50">•</span>
-    <span style="--start:59.6%;--duration:10.9s;--delay:-7.99s;--drift:-13px;--size:13px;--depth:61">✦</span>
-    <span style="--start:64.6%;--duration:7.7s;--delay:-0.64s;--drift:-12px;--size:7px;--depth:52">✧</span>
-    <span style="--start:69.6%;--duration:7.3s;--delay:-4.52s;--drift:13px;--size:10px;--depth:57">•</span>
-    <span style="--start:74.6%;--duration:9.9s;--delay:-6.60s;--drift:-16px;--size:7px;--depth:64">✦</span>
-    <span style="--start:79.6%;--duration:7.7s;--delay:-3.53s;--drift:13px;--size:14px;--depth:51">✧</span>
-    <span style="--start:84.6%;--duration:10.3s;--delay:-8.58s;--drift:-12px;--size:7px;--depth:62">•</span>
-    <span style="--start:89.6%;--duration:7.9s;--delay:-4.89s;--drift:15px;--size:11px;--depth:53">✦</span>
-    <span style="--start:94.6%;--duration:8.7s;--delay:0.00s;--drift:18px;--size:6px;--depth:56">✧</span>
-    <span style="--start:98.6%;--duration:7.3s;--delay:-5.56s;--drift:21px;--size:11px;--depth:46">•</span>
-    <span style="--start:1.4%;--duration:7.3s;--delay:-5.91s;--drift:11px;--size:12px;--depth:46">•</span>
-    <span style="--start:6.4%;--duration:9.9s;--delay:-1.10s;--drift:-6px;--size:6px;--depth:52">✦</span>
-    <span style="--start:11.4%;--duration:9.5s;--delay:-3.96s;--drift:8px;--size:10px;--depth:55">✧</span>
-    <span style="--start:16.4%;--duration:7.3s;--delay:-6.95s;--drift:-8px;--size:7px;--depth:43">•</span>
-    <span style="--start:21.4%;--duration:10.9s;--delay:-1.82s;--drift:11px;--size:8px;--depth:60">✦</span>
-    <span style="--start:26.4%;--duration:9.5s;--delay:-7.52s;--drift:9px;--size:6px;--depth:48">✧</span>
-    <span style="--start:31.4%;--duration:9.3s;--delay:-4.13s;--drift:-10px;--size:13px;--depth:55">•</span>
-    <span style="--start:36.4%;--duration:7.9s;--delay:-0.75s;--drift:9px;--size:7px;--depth:42">✦</span>
-    <span style="--start:41.4%;--duration:10.5s;--delay:-9.33s;--drift:-8px;--size:6px;--depth:50">✧</span>
-    <span style="--start:46.4%;--duration:8.3s;--delay:-2.42s;--drift:13px;--size:9px;--depth:59">•</span>
-    <span style="--start:51.4%;--duration:7.9s;--delay:-6.40s;--drift:-8px;--size:6px;--depth:45">✦</span>
-    <span style="--start:56.4%;--duration:11.5s;--delay:-0.77s;--drift:9px;--size:12px;--depth:56">✧</span>
-    <span style="--start:61.4%;--duration:8.3s;--delay:-3.46s;--drift:8px;--size:6px;--depth:47">•</span>
-    <span style="--start:66.4%;--duration:7.9s;--delay:-7.52s;--drift:-9px;--size:9px;--depth:52">✦</span>
-    <span style="--start:71.4%;--duration:10.5s;--delay:0.00s;--drift:11px;--size:6px;--depth:59">✧</span>
-    <span style="--start:76.4%;--duration:8.3s;--delay:-6.57s;--drift:-9px;--size:13px;--depth:46">•</span>
-    <span style="--start:81.4%;--duration:10.9s;--delay:-1.82s;--drift:8px;--size:6px;--depth:57">✦</span>
-    <span style="--start:86.4%;--duration:8.5s;--delay:-8.10s;--drift:-10px;--size:10px;--depth:48">✧</span>
-    <span style="--start:91.4%;--duration:9.3s;--delay:-3.10s;--drift:-13px;--size:6px;--depth:51">•</span>
-    <span style="--start:95.4%;--duration:7.9s;--delay:-0.75s;--drift:-15px;--size:10px;--depth:41">✦</span>
-    <span style="--start:0.92%;--duration:7.30s;--delay:-2.04s;--drift:12px;--size:13px;--depth:54">✦</span>
-    <span style="--start:6.11%;--duration:9.57s;--delay:-6.15s;--drift:-7px;--size:6px;--depth:60">✧</span>
-    <span style="--start:11.30%;--duration:8.84s;--delay:-0.08s;--drift:8px;--size:11px;--depth:63">•</span>
-    <span style="--start:15.92%;--duration:8.11s;--delay:-4.91s;--drift:-9px;--size:8px;--depth:51">✦</span>
-    <span style="--start:21.11%;--duration:11.38s;--delay:-10.03s;--drift:12px;--size:9px;--depth:68">✧</span>
-    <span style="--start:26.30%;--duration:9.65s;--delay:-5.47s;--drift:10px;--size:7px;--depth:56">•</span>
-    <span style="--start:30.92%;--duration:10.92s;--delay:-3.07s;--drift:-10px;--size:14px;--depth:63">✦</span>
-    <span style="--start:36.11%;--duration:7.30s;--delay:-7.25s;--drift:10px;--size:8px;--depth:50">✧</span>
-    <span style="--start:41.30%;--duration:9.57s;--delay:-8.11s;--drift:-9px;--size:7px;--depth:58">•</span>
-    <span style="--start:45.92%;--duration:8.84s;--delay:-2.75s;--drift:14px;--size:10px;--depth:67">✦</span>
-    <span style="--start:51.11%;--duration:8.11s;--delay:-7.22s;--drift:-8px;--size:7px;--depth:53">✧</span>
-    <span style="--start:56.30%;--duration:11.38s;--delay:-2.37s;--drift:10px;--size:13px;--depth:64">•</span>
-    <span style="--start:60.92%;--duration:9.65s;--delay:-5.97s;--drift:9px;--size:7px;--depth:55">✦</span>
-    <span style="--start:66.11%;--duration:8.92s;--delay:-1.92s;--drift:-10px;--size:10px;--depth:60">✧</span>
-    <span style="--start:71.30%;--duration:9.30s;--delay:-3.02s;--drift:12px;--size:7px;--depth:67">•</span>
-    <span style="--start:75.92%;--duration:8.57s;--delay:-1.52s;--drift:-10px;--size:14px;--depth:54">✦</span>
-    <span style="--start:81.11%;--duration:10.84s;--delay:-6.64s;--drift:9px;--size:7px;--depth:65">✧</span>
-    <span style="--start:86.30%;--duration:8.11s;--delay:-3.73s;--drift:-11px;--size:11px;--depth:56">•</span>
-    <span style="--start:90.92%;--duration:10.38s;--delay:-9.36s;--drift:-13px;--size:6px;--depth:59">✦</span>
-    <span style="--start:95.11%;--duration:8.65s;--delay:-6.27s;--drift:-16px;--size:11px;--depth:49">✧</span>
-    <span style="--start:1.55%;--duration:7.57s;--delay:-3.16s;--drift:-14px;--size:12px;--depth:50">✧</span>
-    <span style="--start:6.74%;--duration:9.84s;--delay:-7.67s;--drift:8px;--size:6px;--depth:56">•</span>
-    <span style="--start:11.93%;--duration:9.11s;--delay:-1.33s;--drift:-10px;--size:10px;--depth:59">✦</span>
-    <span style="--start:16.55%;--duration:8.38s;--delay:-6.22s;--drift:11px;--size:7px;--depth:47">✧</span>
-    <span style="--start:21.74%;--duration:11.65s;--delay:-0.21s;--drift:-14px;--size:8px;--depth:64">•</span>
-    <span style="--start:26.93%;--duration:9.92s;--delay:-6.98s;--drift:-12px;--size:6px;--depth:52">✦</span>
-    <span style="--start:31.55%;--duration:9.30s;--delay:-3.89s;--drift:13px;--size:13px;--depth:59">✧</span>
-    <span style="--start:36.74%;--duration:7.57s;--delay:-0.98s;--drift:-12px;--size:7px;--depth:46">•</span>
-    <span style="--start:41.93%;--duration:9.84s;--delay:-9.68s;--drift:11px;--size:6px;--depth:54">✦</span>
-    <span style="--start:46.55%;--duration:9.11s;--delay:-4.08s;--drift:-16px;--size:9px;--depth:63">✧</span>
-    <span style="--start:51.74%;--duration:8.38s;--delay:-0.23s;--drift:10px;--size:6px;--depth:49">•</span>
-    <span style="--start:56.93%;--duration:11.65s;--delay:-4.02s;--drift:-12px;--size:12px;--depth:60">✦</span>
-    <span style="--start:61.55%;--duration:9.92s;--delay:-7.50s;--drift:-11px;--size:6px;--depth:51">✧</span>
-    <span style="--start:66.74%;--duration:7.30s;--delay:-2.57s;--drift:12px;--size:9px;--depth:56">•</span>
-    <span style="--start:71.93%;--duration:9.57s;--delay:-4.41s;--drift:-14px;--size:6px;--depth:63">✦</span>
-    <span style="--start:76.55%;--duration:8.84s;--delay:-2.78s;--drift:12px;--size:13px;--depth:50">✧</span>
-    <span style="--start:81.74%;--duration:11.11s;--delay:-8.33s;--drift:-11px;--size:6px;--depth:61">•</span>
-    <span style="--start:86.93%;--duration:8.38s;--delay:-5.00s;--drift:14px;--size:10px;--depth:52">✦</span>
-    <span style="--start:91.55%;--duration:10.65s;--delay:-0.41s;--drift:16px;--size:6px;--depth:55">✧</span>
-    <span style="--start:95.74%;--duration:8.92s;--delay:-7.69s;--drift:19px;--size:10px;--depth:45">•</span>
-    <span style="--start:2.18%;--duration:7.84s;--delay:-4.34s;--drift:12px;--size:11px;--depth:46">•</span>
-    <span style="--start:7.37%;--duration:10.11s;--delay:-9.27s;--drift:-7px;--size:6px;--depth:52">✦</span>
-    <span style="--start:12.56%;--duration:9.38s;--delay:-2.65s;--drift:8px;--size:9px;--depth:55">✧</span>
-    <span style="--start:17.18%;--duration:8.65s;--delay:-7.61s;--drift:-9px;--size:6px;--depth:43">•</span>
-    <span style="--start:22.37%;--duration:11.92s;--delay:-1.85s;--drift:12px;--size:7px;--depth:60">✦</span>
-    <span style="--start:27.56%;--duration:8.30s;--delay:-6.98s;--drift:10px;--size:6px;--depth:48">✧</span>
-    <span style="--start:32.18%;--duration:9.57s;--delay:-5.31s;--drift:-10px;--size:12px;--depth:55">•</span>
-    <span style="--start:37.37%;--duration:7.84s;--delay:-2.09s;--drift:10px;--size:6px;--depth:42">✦</span>
-    <span style="--start:42.56%;--duration:10.11s;--delay:-1.23s;--drift:-9px;--size:6px;--depth:50">✧</span>
-    <span style="--start:47.18%;--duration:9.38s;--delay:-5.49s;--drift:14px;--size:8px;--depth:59">•</span>
-    <span style="--start:52.37%;--duration:8.65s;--delay:-1.42s;--drift:-8px;--size:6px;--depth:45">✦</span>
-    <span style="--start:57.56%;--duration:11.92s;--delay:-5.75s;--drift:10px;--size:11px;--depth:56">✧</span>
-    <span style="--start:62.18%;--duration:8.30s;--delay:-7.41s;--drift:9px;--size:6px;--depth:47">•</span>
-    <span style="--start:67.37%;--duration:7.57s;--delay:-3.71s;--drift:-10px;--size:8px;--depth:52">✦</span>
-    <span style="--start:72.56%;--duration:9.84s;--delay:-5.89s;--drift:12px;--size:6px;--depth:59">✧</span>
-    <span style="--start:77.18%;--duration:9.11s;--delay:-4.11s;--drift:-10px;--size:12px;--depth:46">•</span>
-    <span style="--start:82.37%;--duration:11.38s;--delay:-10.09s;--drift:9px;--size:6px;--depth:57">✦</span>
-    <span style="--start:87.56%;--duration:8.65s;--delay:-6.35s;--drift:-11px;--size:9px;--depth:48">✧</span>
-    <span style="--start:92.18%;--duration:10.92s;--delay:-1.92s;--drift:-13px;--size:6px;--depth:51">•</span>
-    <span style="--start:96.37%;--duration:7.30s;--delay:-7.29s;--drift:-16px;--size:9px;--depth:41">✦</span>
-    <span style="--start:2.81%;--duration:8.11s;--delay:-5.60s;--drift:-14px;--size:13px;--depth:42">✦</span>
-    <span style="--start:8.00%;--duration:10.38s;--delay:-0.55s;--drift:8px;--size:6px;--depth:48">✧</span>
-    <span style="--start:13.19%;--duration:9.65s;--delay:-4.05s;--drift:-10px;--size:11px;--depth:51">•</span>
-    <span style="--start:17.81%;--duration:8.92s;--delay:-0.15s;--drift:11px;--size:8px;--depth:39">✦</span>
-    <span style="--start:23.00%;--duration:10.30s;--delay:-3.01s;--drift:-14px;--size:9px;--depth:56">✧</span>
-    <span style="--start:28.19%;--duration:8.57s;--delay:-8.38s;--drift:-12px;--size:7px;--depth:44">•</span>
-    <span style="--start:32.81%;--duration:9.84s;--delay:-6.81s;--drift:13px;--size:14px;--depth:51">✦</span>
-    <span style="--start:38.00%;--duration:8.11s;--delay:-3.27s;--drift:-12px;--size:8px;--depth:38">✧</span>
-    <span style="--start:43.19%;--duration:10.38s;--delay:-2.68s;--drift:11px;--size:7px;--depth:46">•</span>
-    <span style="--start:47.81%;--duration:9.65s;--delay:-6.97s;--drift:-16px;--size:10px;--depth:55">✦</span>
-    <span style="--start:53.00%;--duration:8.92s;--delay:-2.68s;--drift:10px;--size:7px;--depth:41">✧</span>
-    <span style="--start:58.19%;--duration:10.30s;--delay:-6.38s;--drift:-12px;--size:13px;--depth:52">•</span>
-    <span style="--start:62.81%;--duration:8.57s;--delay:-0.26s;--drift:-11px;--size:7px;--depth:43">✦</span>
-    <span style="--start:68.00%;--duration:7.84s;--delay:-4.91s;--drift:12px;--size:10px;--depth:48">✧</span>
-    <span style="--start:73.19%;--duration:10.11s;--delay:-7.43s;--drift:-14px;--size:7px;--depth:55">•</span>
-    <span style="--start:77.81%;--duration:9.38s;--delay:-5.52s;--drift:12px;--size:14px;--depth:42">✦</span>
-    <span style="--start:83.00%;--duration:11.65s;--delay:-0.28s;--drift:-11px;--size:7px;--depth:53">✧</span>
-    <span style="--start:88.19%;--duration:8.92s;--delay:-7.77s;--drift:14px;--size:11px;--depth:44">•</span>
-    <span style="--start:92.81%;--duration:9.30s;--delay:-2.91s;--drift:16px;--size:6px;--depth:47">✦</span>
-    <span style="--start:97.00%;--duration:7.57s;--delay:-1.03s;--drift:19px;--size:11px;--depth:37">✧</span>
-    <span style="--start:3.44%;--duration:8.38s;--delay:-6.94s;--drift:12px;--size:12px;--depth:54">✧</span>
-    <span style="--start:8.63%;--duration:10.65s;--delay:-2.03s;--drift:-7px;--size:6px;--depth:60">•</span>
-    <span style="--start:13.82%;--duration:9.92s;--delay:-5.53s;--drift:8px;--size:10px;--depth:63">✦</span>
-    <span style="--start:18.44%;--duration:7.30s;--delay:-1.12s;--drift:-9px;--size:7px;--depth:51">✧</span>
-    <span style="--start:23.63%;--duration:10.57s;--delay:-4.53s;--drift:12px;--size:8px;--depth:68">•</span>
-    <span style="--start:28.82%;--duration:8.84s;--delay:-1.02s;--drift:10px;--size:6px;--depth:56">✦</span>
-    <span style="--start:33.44%;--duration:10.11s;--delay:-8.38s;--drift:-10px;--size:13px;--depth:63">✧</span>
-    <span style="--start:38.63%;--duration:8.38s;--delay:-4.53s;--drift:10px;--size:7px;--depth:50">•</span>
-    <span style="--start:43.82%;--duration:10.65s;--delay:-4.21s;--drift:-9px;--size:6px;--depth:58">✦</span>
-    <span style="--start:48.44%;--duration:9.92s;--delay:-8.52s;--drift:14px;--size:9px;--depth:67">✧</span>
-    <span style="--start:53.63%;--duration:7.30s;--delay:-3.20s;--drift:-8px;--size:6px;--depth:53">•</span>
-    <span style="--start:58.82%;--duration:10.57s;--delay:-7.99s;--drift:10px;--size:12px;--depth:64">✦</span>
-    <span style="--start:63.44%;--duration:8.84s;--delay:-1.48s;--drift:9px;--size:6px;--depth:55">✧</span>
-    <span style="--start:68.63%;--duration:8.11s;--delay:-6.19s;--drift:-10px;--size:9px;--depth:60">•</span>
-    <span style="--start:73.82%;--duration:10.38s;--delay:-9.05s;--drift:12px;--size:6px;--depth:67">✦</span>
-    <span style="--start:78.44%;--duration:9.65s;--delay:-7.00s;--drift:-10px;--size:13px;--depth:54">✧</span>
-    <span style="--start:83.63%;--duration:11.92s;--delay:-1.92s;--drift:9px;--size:6px;--depth:65">•</span>
-    <span style="--start:88.82%;--duration:7.30s;--delay:-0.06s;--drift:-11px;--size:10px;--depth:56">✦</span>
-    <span style="--start:93.44%;--duration:9.57s;--delay:-4.30s;--drift:-13px;--size:6px;--depth:59">✧</span>
-    <span style="--start:97.63%;--duration:7.84s;--delay:-2.14s;--drift:-16px;--size:10px;--depth:49">•</span>
-    <span style="--start:4.07%;--duration:8.65s;--delay:-8.35s;--drift:-14px;--size:11px;--depth:50">•</span>
-    <span style="--start:9.26%;--duration:10.92s;--delay:-3.58s;--drift:8px;--size:6px;--depth:56">✦</span>
-    <span style="--start:14.45%;--duration:8.30s;--delay:-5.76s;--drift:-10px;--size:9px;--depth:59">✧</span>
-    <span style="--start:19.07%;--duration:7.57s;--delay:-2.20s;--drift:11px;--size:6px;--depth:47">•</span>
-    <span style="--start:24.26%;--duration:10.84s;--delay:-6.14s;--drift:-14px;--size:7px;--depth:64">✦</span>
-    <span style="--start:29.45%;--duration:9.11s;--delay:-2.30s;--drift:-12px;--size:6px;--depth:52">✧</span>
-    <span style="--start:34.07%;--duration:10.38s;--delay:-10.02s;--drift:13px;--size:12px;--depth:59">•</span>
-    <span style="--start:39.26%;--duration:8.65s;--delay:-5.86s;--drift:-12px;--size:6px;--depth:46">✦</span>
-    <span style="--start:44.45%;--duration:10.92s;--delay:-5.81s;--drift:11px;--size:6px;--depth:54">✧</span>
-    <span style="--start:49.07%;--duration:8.30s;--delay:-8.27s;--drift:-16px;--size:8px;--depth:63">•</span>
-    <span style="--start:54.26%;--duration:7.57s;--delay:-4.35s;--drift:10px;--size:6px;--depth:49">✦</span>
-    <span style="--start:59.45%;--duration:10.84s;--delay:-9.68s;--drift:-12px;--size:11px;--depth:60">✧</span>
-    <span style="--start:64.07%;--duration:9.11s;--delay:-2.77s;--drift:-11px;--size:6px;--depth:51">•</span>
-    <span style="--start:69.26%;--duration:8.38s;--delay:-7.55s;--drift:12px;--size:8px;--depth:56">✦</span>
-    <span style="--start:74.45%;--duration:10.65s;--delay:-0.10s;--drift:-14px;--size:6px;--depth:63">✧</span>
-    <span style="--start:79.07%;--duration:9.92s;--delay:-8.55s;--drift:12px;--size:12px;--depth:50">•</span>
-    <span style="--start:84.26%;--duration:10.30s;--delay:-3.07s;--drift:-11px;--size:6px;--depth:61">✦</span>
-    <span style="--start:89.45%;--duration:7.57s;--delay:-1.10s;--drift:14px;--size:9px;--depth:52">✧</span>
-    <span style="--start:94.07%;--duration:9.84s;--delay:-5.77s;--drift:16px;--size:6px;--depth:55">•</span>
-    <span style="--start:98.26%;--duration:8.11s;--delay:-3.32s;--drift:19px;--size:9px;--depth:45">✦</span>
-    <span style="--start:4.70%;--duration:8.92s;--delay:-0.91s;--drift:12px;--size:13px;--depth:46">✦</span>
-    <span style="--start:9.89%;--duration:9.30s;--delay:-4.32s;--drift:-7px;--size:6px;--depth:52">✧</span>
-    <span style="--start:15.08%;--duration:8.57s;--delay:-7.12s;--drift:8px;--size:11px;--depth:55">•</span>
-    <span style="--start:19.70%;--duration:7.84s;--delay:-3.35s;--drift:-9px;--size:8px;--depth:43">✦</span>
-    <span style="--start:24.89%;--duration:11.11s;--delay:-7.81s;--drift:12px;--size:9px;--depth:60">✧</span>
-    <span style="--start:30.08%;--duration:9.38s;--delay:-3.65s;--drift:10px;--size:7px;--depth:48">•</span>
-    <span style="--start:34.70%;--duration:10.65s;--delay:-1.09s;--drift:-10px;--size:14px;--depth:55">✦</span>
-    <span style="--start:39.89%;--duration:8.92s;--delay:-7.27s;--drift:10px;--size:8px;--depth:42">✧</span>
-    <span style="--start:45.08%;--duration:9.30s;--delay:-6.22s;--drift:-9px;--size:7px;--depth:50">•</span>
-    <span style="--start:49.70%;--duration:8.57s;--delay:-1.14s;--drift:14px;--size:10px;--depth:59">✦</span>
-    <span style="--start:54.89%;--duration:7.84s;--delay:-5.58s;--drift:-8px;--size:7px;--depth:45">✧</span>
-    <span style="--start:60.08%;--duration:11.11s;--delay:-0.33s;--drift:10px;--size:13px;--depth:56">•</span>
-    <span style="--start:64.70%;--duration:9.38s;--delay:-4.14s;--drift:9px;--size:7px;--depth:47">✦</span>
-    <span style="--start:69.89%;--duration:8.65s;--delay:-0.33s;--drift:-10px;--size:10px;--depth:52">✧</span>
-    <span style="--start:75.08%;--duration:10.92s;--delay:-1.60s;--drift:12px;--size:7px;--depth:59">•</span>
-    <span style="--start:79.70%;--duration:8.30s;--delay:-8.29s;--drift:-10px;--size:14px;--depth:46">✦</span>
-    <span style="--start:84.89%;--duration:10.57s;--delay:-4.60s;--drift:9px;--size:7px;--depth:57">✧</span>
-    <span style="--start:90.08%;--duration:7.84s;--delay:-2.21s;--drift:-11px;--size:11px;--depth:48">•</span>
-    <span style="--start:94.70%;--duration:10.11s;--delay:-7.32s;--drift:-13px;--size:6px;--depth:51">✦</span>
-    <span style="--start:98.89%;--duration:8.38s;--delay:-4.58s;--drift:-16px;--size:11px;--depth:41">✧</span>
-  </div>
+  <div class="hero-stardust" aria-hidden="true"></div>
   <div class="hero-copy">
     <div class="eyebrow"><span class="eyebrow-dot"></span> OUR LITTLE SINGAPORE</div>
     <h1>싱가포르<br class="hero-mobile-break"> 육아백과</h1>
@@ -1211,7 +1014,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
    <div class="landing-card-actions"><button id="quickRecommendOpen" class="landing-primary-btn" type="button">추천 남기기 <span aria-hidden="true">↗</span></button></div>
   </div>
  </section>
- <div class="home-heading"><h2><span aria-hidden="true">📚</span> 카테고리 둘러보기</h2><p>여덟 가지 주제로 편하게 찾아보세요</p></div>
+ <div class="home-heading home-categories-heading"><h2><span class="category-heading-icon" aria-hidden="true">📚</span> <span>카테고리 둘러보기</span></h2><p>여덟 가지 주제로 편하게 찾아보세요</p></div>
  <div id="categories" class="categories"></div>
  <section class="home-recent"><div class="home-heading"><h2>💬 새로 올라온 사용 후기</h2><p>직접 경험한 이야기를 확인해 보세요</p></div><div id="homeRecentReviews" class="recent-grid"><p class="muted">최신 후기를 불러오는 중입니다…</p></div></section>
 </section>
@@ -1892,6 +1695,37 @@ function mountHomeWidgets(){
 }
 
 
+function initHeroStardust(){
+ const layer=document.querySelector('.hero-stardust');
+ const motionPreference=window.matchMedia('(prefers-reduced-motion: reduce)');
+ const refresh=()=>{
+  layer.replaceChildren();
+  if(motionPreference.matches)return;
+
+  const sparkles=document.createDocumentFragment();
+  const shapes=['✦','✧','•'];
+  for(let i=0;i<500;i++){
+   const sparkle=document.createElement('span');
+   const duration=7+Math.random()*5;
+   const large=i%29===0;
+   const size=large?20+Math.random()*9:6+Math.random()*8;
+   sparkle.textContent=large?'✦':shapes[i%shapes.length];
+   sparkle.style.cssText=[
+    '--start:'+(1+Math.random()*98).toFixed(2)+'%',
+    '--duration:'+duration.toFixed(2)+'s',
+    '--delay:'+(-Math.random()*duration).toFixed(2)+'s',
+    '--drift:'+(Math.random()*38-19).toFixed(1)+'px',
+    '--size:'+size.toFixed(1)+'px',
+    '--depth:'+(45+Math.random()*28).toFixed(1)
+   ].join(';');
+   sparkles.appendChild(sparkle);
+  }
+  layer.appendChild(sparkles);
+ };
+ refresh();
+ motionPreference.addEventListener('change',refresh);
+}
+
 function initHeroGreeting(){
  const art=document.querySelector('#heroAnimation'),speech=document.querySelector('#heroSpeech');
  const babiesPicture=document.querySelector('#pixelBabiesImage');
@@ -1949,6 +1783,6 @@ function initHeroGreeting(){
  document.addEventListener('visibilitychange',()=>{if(document.hidden){speech.classList.remove('is-visible');art.classList.remove('is-bouncing','show-hearts');}});
 }
 
-mountCats();mountHomeWidgets();initHeroGreeting();initPlaydateJoinDialog();const deepLink=location.hash.slice(1);if(findNavigationGroup(deepLink))openCategory(deepLink,false);
+mountCats();mountHomeWidgets();initHeroStardust();initHeroGreeting();initPlaydateJoinDialog();const deepLink=location.hash.slice(1);if(findNavigationGroup(deepLink))openCategory(deepLink,false);
 </script>
 </body></html>
