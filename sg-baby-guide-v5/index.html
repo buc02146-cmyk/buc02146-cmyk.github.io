@@ -242,7 +242,7 @@ a{color:var(--sage);text-decoration:none}.hide{display:none!important}
 @media(max-width:600px){.home-playdate{padding:17px}.home-playdate-head{flex-wrap:wrap}.home-playdate h2{font-size:22px}.home-playdate-grid,.recent-grid{grid-template-columns:1fr}.compare-products{grid-template-columns:1fr 1fr}.compare-product{padding:10px}.compare-product img{height:92px}.compare-product h4{font-size:13px}.playdate-formbox,.playdate-listbox,.compare-wrap{padding:16px}}
 .product-review-form .photo-consent{display:flex;flex-direction:row;align-items:flex-start;gap:8px;line-height:1.6;font-weight:500;font-size:11px;color:#819181}
 .product-review-form .photo-consent input{width:auto;flex:0 0 auto;margin-top:3px;accent-color:#668e70}
-</style>
+.search-group-label{display:block;color:#6f9376;font-size:11px;font-weight:800;margin:14px 2px 7px}.global-results>div{display:grid;gap:6px}</style>
 </head>
 <body>
 
@@ -711,24 +711,45 @@ async function refreshReviewSummaries(){
  });
  }catch{}
 }
+
 function setupGlobalSearch(){
  const input=document.querySelector('#globalSearch'),output=document.querySelector('#globalResults'),clear=document.querySelector('#globalSearchClear');
  if(!input||!output)return;
- const search=()=>{
-  const q=input.value.trim().toLocaleLowerCase();
-  if(!q){output.innerHTML='';output.classList.add('hide');return;}
-  const found=DATA.records.filter(item=>(item.title+' '+(item.desc||'')+' '+(item.review||'')+' '+(item.sub||'')+' '+(item.address||'')).toLocaleLowerCase().includes(q)).slice(0,12);
+ let serial=0;
+ function showSearch(){
+  const query=input.value.trim().toLocaleLowerCase(),id=++serial;
+  if(!query){output.innerHTML='';output.classList.add('hide');return;}
+  const found=DATA.records.filter(item=>(item.title+' '+(item.desc||'')+' '+(item.review||'')+' '+(item.sub||'')+' '+(item.address||'')).toLocaleLowerCase().includes(query)).slice(0,12);
   output.classList.remove('hide');
-  output.innerHTML=found.map((item,i)=>'<button class="global-result" type="button" data-index="'+i+'"><div><b>'+e(item.title)+'</b><small>'+e(categories.find(c=>c.id===item.category)?.name||'정보')+' · '+e(item.sub||'')+'</small></div><span>보기 ↗</span></button>').join('')||'<div class="empty">검색된 정보가 없습니다. 다른 단어로 검색해 주세요.</div>';
+  output.innerHTML='<div id="staticSearchResults">'+(found.map((item,i)=>'<button class="global-result" type="button" data-index="'+i+'"><div><b>'+e(item.title)+'</b><small>'+e(categories.find(c=>c.id===item.category)?.name||'정보')+' · '+e(item.sub||'')+'</small></div><span>보기 ↗</span></button>').join('')||'<p class="muted">저장된 제품·정보 검색 결과가 없습니다.</p>')+'</div><div id="communitySearchResults"></div>';
   output.querySelectorAll('[data-index]').forEach(btn=>btn.onclick=()=>{
-    const item=found[Number(btn.dataset.index)];
-    openCategory(item.category);
-    if(item.category==='outing'){state.search=item.title;renderPlaces();return;}
-    state.search=item.title;const toolbar=document.querySelector('#search');if(toolbar)toolbar.value=item.title;renderContent();
+   const item=found[Number(btn.dataset.index)];
+   openCategory(item.category);
+   state.search=item.title;
+   const bar=document.querySelector('#search');if(bar)bar.value=state.search;
+   renderContent();
   });
- };
- input.addEventListener('input',search);
- clear.onclick=()=>{input.value='';search();input.focus()};
+  if(query.length<2)return;
+  setTimeout(async()=>{
+   if(id!==serial)return;
+   try{
+    const r=await fetch('/api/search?q='+encodeURIComponent(query),{cache:'no-store'});
+    if(!r.ok)return;const j=await r.json();if(id!==serial)return;
+    const section=document.querySelector('#communitySearchResults');if(!section)return;
+    const items=j.items||[];
+    section.innerHTML=items.length?'<small class="search-group-label">커뮤니티 추천 · 후기 · 플레이데이트</small>'+items.slice(0,12).map((item,i)=>'<button class="global-result" data-remote="'+i+'" type="button"><div><b>'+e(item.title)+'</b><small>'+e(item.kind==='playdate'?'플레이데이트':item.kind==='review'?'제품 후기':'추천 글')+' · '+e((item.snippet||'').slice(0,70))+'</small></div><span>보기 ↗</span></button>').join(''):'';
+    section.querySelectorAll('[data-remote]').forEach(button=>button.onclick=()=>{
+     const item=items[Number(button.dataset.remote)];
+     if(item.kind==='playdate'){openCategory('playdate');return;}
+     if(item.kind==='recommendation'){openCategory('recommendations');return;}
+     openCategory(item.category);state.search=item.title;
+     const bar=document.querySelector('#search');if(bar)bar.value=state.search;renderContent();
+    });
+   }catch{}
+  },250);
+ }
+ input.addEventListener('input',showSearch);
+ clear.onclick=()=>{input.value='';showSearch();input.focus()};
 }
 const dateLabel=local=>{const date=new Date(local+'+08:00');return Number.isNaN(date.getTime())?local:date.toLocaleString('ko-KR',{timeZone:'Asia/Singapore',month:'long',day:'numeric',weekday:'short',hour:'2-digit',minute:'2-digit'})};
 const futurePlaydate=x=>Date.parse(x.starts_at+'+08:00')>Date.now()-3600000;
