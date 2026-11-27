@@ -711,6 +711,25 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
  .playdate-join-dialog::backdrop{background:rgba(7,3,12,.78)}
  .kakao-openchat{background:#fee500!important;color:#322700!important}
 }
+
+/* Individual speech bubble positioning for the four children */
+.homeLanding #heroAnimation[data-speaker="0"] .hero-speech{right:auto;left:2%;top:23%;border-radius:20px 20px 20px 6px}
+.homeLanding #heroAnimation[data-speaker="0"] .hero-speech:after{right:auto;left:19px}
+.homeLanding #heroAnimation[data-speaker="1"] .hero-speech{right:30%;top:-12%}
+.homeLanding #heroAnimation[data-speaker="2"] .hero-speech{right:19%;top:18%}
+.homeLanding #heroAnimation[data-speaker="3"] .hero-speech{right:-1%;top:5%}
+.homeLanding #heroAnimation[data-speaker="0"] .hero-talker{left:1%;top:44%}
+.homeLanding #heroAnimation[data-speaker="1"] .hero-talker{left:33%;top:0}
+.homeLanding #heroAnimation[data-speaker="2"] .hero-talker{left:57%;top:43%}
+.homeLanding #heroAnimation[data-speaker="3"] .hero-talker{left:auto;right:1%;top:37%}
+@media(max-width:650px){
+ .homeLanding #heroAnimation .hero-speech{max-width:176px;padding:8px 10px;font-size:11px;white-space:normal}
+ .homeLanding #heroAnimation[data-speaker="0"] .hero-speech{left:0;top:22%}
+ .homeLanding #heroAnimation[data-speaker="1"] .hero-speech{right:24%;top:-5%}
+ .homeLanding #heroAnimation[data-speaker="2"] .hero-speech{right:18%;top:15%}
+ .homeLanding #heroAnimation[data-speaker="3"] .hero-speech{right:0;top:8%}
+ .homeLanding #heroAnimation .hero-talker{font-size:9px;padding:4px 6px}
+}
 </style>
 </head>
 <body>
