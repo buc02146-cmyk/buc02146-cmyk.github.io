@@ -153,8 +153,21 @@ export default {async fetch(req,env){
       return (result.meta?.changes||0)>0?reply({ok:true}):reply({error:"삭제할 모임이 없습니다."},404);
     }
     if(playdatePath){
+      if(req.method!=="GET"&&req.method!=="POST")return reply({error:"허용되지 않은 요청입니다."},405);
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS playdate_numbers (number INTEGER PRIMARY KEY AUTOINCREMENT, playdate_id TEXT NOT NULL UNIQUE)").run();
+      await env.DB.prepare(`
+        INSERT INTO playdate_numbers(playdate_id)
+        SELECT p.id FROM playdates p
+        WHERE NOT EXISTS (SELECT 1 FROM playdate_numbers n WHERE n.playdate_id=p.id)
+        ORDER BY p.created_at,p.id
+      `).run();
       if(req.method==="GET"){
-        const rows=await env.DB.prepare("SELECT id,nickname,place,starts_at,min_month,max_month,capacity,details,notes,region,created_at FROM playdates WHERE approved=1 ORDER BY starts_at ASC LIMIT 120").all();
+        const rows=await env.DB.prepare(`
+          SELECT p.id,p.nickname,p.place,p.starts_at,p.min_month,p.max_month,p.capacity,
+            p.details,p.notes,p.region,p.created_at,n.number AS edition
+          FROM playdates p JOIN playdate_numbers n ON n.playdate_id=p.id
+          WHERE p.approved=1 ORDER BY p.starts_at ASC LIMIT 120
+        `).all();
         const participants=await env.DB.prepare("SELECT playdate_id,nickname,child_month FROM playdate_participants ORDER BY joined_at ASC LIMIT 3000").all();
         const byId=new Map();
         for(const p of participants.results||[]){
@@ -167,7 +180,6 @@ export default {async fetch(req,env){
           return {...p,participants:participant_details.map(person=>person.nickname),participant_details,joined_count:1+all.length};
         })});
       }
-      if(req.method!=="POST")return reply({error:"허용되지 않은 요청입니다."},405);
       if(!(req.headers.get("content-type")||"").startsWith("application/json"))return reply({error:"입력 형식을 확인해 주세요."},415);
       const raw=await req.text();if(raw.length>4500)return reply({error:"내용이 너무 깁니다."},413);
       let d;try{d=JSON.parse(raw)}catch{return reply({error:"입력 형식이 올바르지 않습니다."},400)}
@@ -183,7 +195,10 @@ export default {async fetch(req,env){
       if(!Number.isFinite(meetingAt)||meetingAt<Date.now()-3600000||meetingAt>Date.now()+365*86400000)
         return reply({error:"모임은 앞으로 1년 이내 날짜로 등록해 주세요."},400);
       const id=crypto.randomUUID(),now=new Date().toISOString();
-      await env.DB.prepare("INSERT INTO playdates(id,nickname,place,starts_at,min_month,max_month,capacity,details,notes,region,created_at,approved) VALUES(?,?,?,?,?,?,?,?,?,?,?,1)").bind(id,nickname,place,starts_at,min,max,capacity,details,notes,region,now).run();
+      await env.DB.batch([
+        env.DB.prepare("INSERT INTO playdates(id,nickname,place,starts_at,min_month,max_month,capacity,details,notes,region,created_at,approved) VALUES(?,?,?,?,?,?,?,?,?,?,?,1)").bind(id,nickname,place,starts_at,min,max,capacity,details,notes,region,now),
+        env.DB.prepare("INSERT INTO playdate_numbers(playdate_id) VALUES(?)").bind(id)
+      ]);
       return reply({ok:true,id},201);
     }
 

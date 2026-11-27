@@ -1010,6 +1010,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
  .sg-map-svg .map-water{fill:#1f2c3d}
  .sg-map-svg .map-region path{stroke:#393049}
 }
+.playdate-edition{display:block;margin-bottom:3px;font-size:12px;font-weight:800;color:#7545a8}
+@media(prefers-color-scheme:dark){.playdate-edition{color:#e1baff}}
 </style>
 </head>
 <body>
@@ -1698,16 +1700,20 @@ function playdateAttendance(p){
  const cap=Math.max(2,Number(p.capacity||2));
  return {filled,cap,full:filled>=cap};
 }
+function playdateEdition(p){
+ return Number.isInteger(p.edition)&&p.edition>0?'제'+p.edition+'회 플레이데이트':'플레이데이트';
+}
 function playdateCard(p,home=false){
+ const edition='<span class="playdate-edition">'+playdateEdition(p)+'</span>';
  const href='https://open.kakao.com/o/gKHZMCYi';
  const {filled,cap,full}=playdateAttendance(p);
- if(home)return '<button type="button" class="home-playdate-teaser" data-playdate-open="1"><strong>'+e(p.place)+'</strong><small>📅 '+e(dateLabel(p.starts_at))+'</small><small>👶 '+p.min_month+'–'+p.max_month+'M · '+e(p.region)+'</small><small class="playdate-small-count">'+(full?'모집 마감':filled+'/'+cap+'명 모집 중')+'</small></button>';
+ if(home)return '<button type="button" class="home-playdate-teaser" data-playdate-open="1">'+edition+'<strong>'+e(p.place)+'</strong><small>📅 '+e(dateLabel(p.starts_at))+'</small><small>👶 '+p.min_month+'–'+p.max_month+'M · '+e(p.region)+'</small><small class="playdate-small-count">'+(full?'모집 마감':filled+'/'+cap+'명 모집 중')+'</small></button>';
  const attendees=p.participant_details||(p.participants||[]).map(nickname=>({nickname}));
  const names=attendees.map(person=>'<span class="participant-name">'+e(person.nickname)+(person.child_month==null?'':' · '+person.child_month+'개월')+'</span>').join('');
  const joined=Boolean(getPlaydateClaim(p.id));
  const joinButton=joined?'<button type="button" class="playdate-leave" data-id="'+e(p.id)+'">참여 취소</button>'
   :'<button type="button" class="playdate-join" data-id="'+e(p.id)+'" '+(full?'disabled':'')+'>'+(full?'모집 마감':'💜 참여하기')+'</button>';
- return '<article class="playdate-item"><h4>📍 '+e(p.place)+'</h4><div class="playdate-pills"><span>📅 '+e(dateLabel(p.starts_at))+'</span><span>👶 '+p.min_month+'–'+p.max_month+'M</span><span>👥 '+filled+'/'+cap+'명'+(full?' · 모집 마감':' · 모집 중')+'</span><span>'+e(p.region)+'</span></div>'
+ return '<article class="playdate-item">'+edition+'<h4>📍 '+e(p.place)+'</h4><div class="playdate-pills"><span>📅 '+e(dateLabel(p.starts_at))+'</span><span>👶 '+p.min_month+'–'+p.max_month+'M</span><span>👥 '+filled+'/'+cap+'명'+(full?' · 모집 마감':' · 모집 중')+'</span><span>'+e(p.region)+'</span></div>'
   +'<p>☕ '+e(p.details)+'</p>'+(p.notes?'<small>💬 '+e(p.notes)+'</small>':'')
   +'<p class="playdate-host">모임장 · '+e(p.nickname)+'</p>'
   +'<div class="playdate-attendees"><b>참여 신청 '+Math.max(0,filled-1)+'명</b><div class="attendee-names">'+(names||'<small>첫 참여자를 기다리고 있어요.</small>')+'</div></div>'
@@ -1796,7 +1802,7 @@ function showPlaydatePosts(){
  });
  wrap.querySelectorAll('.playdate-copy').forEach(btn=>btn.onclick=async()=>{
   const p=playdateCache.find(x=>x.id===btn.dataset.id);if(!p)return;
-  const msg='🧸 플레이데이트 모집\n\n📍 장소: '+p.place+'\n📅 날짜 및 시간: '+dateLabel(p.starts_at)+'\n👶 아이 월령: '+p.min_month+'–'+p.max_month+'개월\n👥 모집 인원: '+p.capacity+'명\n☕ 모임 내용: '+p.details+'\n💬 기타 사항: '+(p.notes||'-');
+  const msg='🧸 '+playdateEdition(p)+' 모집\n\n📍 장소: '+p.place+'\n📅 날짜 및 시간: '+dateLabel(p.starts_at)+'\n👶 아이 월령: '+p.min_month+'–'+p.max_month+'개월\n👥 모집 인원: '+p.capacity+'명\n☕ 모임 내용: '+p.details+'\n💬 기타 사항: '+(p.notes||'-');
   try{await navigator.clipboard.writeText(msg);btn.textContent='복사 완료'}catch{window.prompt('모집글을 복사해 주세요.',msg)}
  });
  wrap.querySelectorAll('.playdate-remove').forEach(btn=>btn.onclick=async()=>{
