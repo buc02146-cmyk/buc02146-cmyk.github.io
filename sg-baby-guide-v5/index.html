@@ -280,6 +280,108 @@ a{color:var(--sage);text-decoration:none}.hide{display:none!important}
   .homeLanding .hero-art-interactive svg,.homeLanding .hero-speech{transition:none!important}
   .homeLanding .hero-art-interactive.show-hearts .hero-heart{opacity:0}
 }
+
+/* Lavender editorial redesign: sophisticated playful color, preserved product content */
+:root{
+ --canvas:#fbf9ff;--white:#fff;--ink:#29233f;--body:#514c66;--muted:#827a97;
+ --sage:#7257bf;--sageSoft:#f0eafb;--line:#e8e1f0;--peach:#f6a391;
+ --shadow:0 12px 34px rgba(75,56,111,.065);--radius:22px;
+}
+html{background:#fbf9ff}
+body{background:var(--canvas);color:var(--ink);font-family:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;letter-spacing:-.025em}
+h1,h2,h3,h4{letter-spacing:-.047em}
+.topbar{background:rgba(255,255,255,.94);border-bottom:1px solid #eee8f3}
+.site-logo{font-weight:850;color:#382b58}.site-logo span{background:#ece4fa;color:#7555b9}
+.home-link{color:#674da9;border-color:#e2d8f1}.topnote{color:#978eaa}
+.homeLanding{padding-top:28px}
+.homeLanding .hero{background:#eee6fa!important;border:1px solid #e7d9fa;box-shadow:0 18px 54px rgba(83,54,151,.08);position:relative}
+.homeLanding .hero::after{content:none!important;display:none!important}
+.homeLanding .hero .eyebrow{background:#fff9ff;border-color:#e9dcef;color:#8062b7;letter-spacing:.15em}
+.homeLanding .eyebrow-dot{background:#ee7c82}
+.homeLanding .hero h1{color:#30234d;font-weight:850;letter-spacing:-.075em}
+.homeLanding .hero p{color:#6e6185}
+.homeLanding .hero-tagline{color:#7c64ab}
+.homeLanding .hero-art svg{filter:drop-shadow(0 14px 20px rgba(90,58,136,.075))}
+.homeLanding .hero-speech{color:#6346a5;border-color:#e2d4f2;background:#fffefe;box-shadow:0 10px 28px rgba(89,59,133,.13)}
+.homeLanding .hero-speech::after{background:#fffefe;border-color:#e2d4f2}
+.homeLanding .hero-heart{color:#e96082}
+.home-search{border:1px solid #e7dff0;background:#fff;box-shadow:var(--shadow);border-radius:20px}
+.home-search label{color:#483568;font-weight:800}
+.home-search-row input{background:#fbfaff;border-color:#e6def1;color:#332846}
+.home-search-row input:focus{outline:2px solid #cbb7ee;outline-offset:1px}
+.home-search-row button{border-color:#e6def1;color:#8065b2}
+.home-playdate{background:#f3e8fa;border:1px solid #e9d9f1;border-radius:24px;position:relative;overflow:hidden}
+.home-playdate:before{content:'';display:block;position:absolute;width:120px;height:120px;border-radius:50%;background:#f6bfbb;opacity:.35;right:-36px;top:-53px;pointer-events:none}
+.home-playdate h2{color:#37264e}
+.home-playdate p{color:#796889}
+.home-playdate-head>button,.playdate-create-btn{background:#7553bd;color:white;border:0;box-shadow:0 5px 12px rgba(113,79,190,.14)}
+.home-playdate-teaser{background:rgba(255,255,255,.94);border-color:#e6dcf1}
+.home-playdate-teaser strong{color:#4e3a75}
+.home-playdate-teaser small{color:#8c7ca6}
+.home-heading h2{color:#332a4c;font-weight:800}
+.categories{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.category{position:relative;border:1px solid #e8dff0;background:#fff;border-radius:20px;min-height:160px;box-shadow:0 8px 28px rgba(70,45,106,.045);padding:20px;transition:transform .23s,box-shadow .23s,border-color .23s}
+.category:hover{transform:translateY(-4px);border-color:#cbbbdf;box-shadow:0 16px 36px rgba(106,74,159,.13)}
+.category .cat-art{width:48px;height:48px;border-radius:16px;background:#efe4fb;font-size:25px}
+.category:nth-child(4n+2) .cat-art{background:#ffe9e4}
+.category:nth-child(4n+3) .cat-art{background:#e6eafb}
+.category:nth-child(4n+4) .cat-art{background:#fff2db}
+.category b{color:#352745;font-weight:800;font-size:16px}
+.category small{color:#817591;font-size:12px}
+.category .cat-go{position:absolute;right:16px;bottom:16px;color:#8f76bc;font-size:20px}
+.category:first-child{grid-column:span 2;background:#e8dcf9;border-color:#dcd0f0}
+.category:first-child .cat-art{background:#fff}
+.category:first-child b{font-size:20px}
+.category:nth-child(2){background:#fff9f6}
+.category:nth-child(3){background:#f6f3ff}
+.category:nth-child(4){background:#f7f6ff}
+.category:nth-child(5){background:#fffdf5}
+.detail-head small{color:#a289c8}
+.detail-head h2{color:#30234d}
+.detail-head p{color:#867991}
+.homebtn{border-color:#e3d7ef;color:#7152ae}
+.group-tabs{display:flex;gap:7px;flex-wrap:wrap;margin:-1px 0 19px;padding:8px;background:#f1ebfa;border:1px solid #e6dcf4;border-radius:16px}
+.group-tab{flex:1;min-width:124px;border:0;border-radius:11px;padding:12px 16px;background:transparent;color:#77658f;font-size:13px;font-weight:800;transition:background .17s,color .17s,transform .17s}
+.group-tab:hover{background:#fff8ff;color:#68509f}
+.group-tab.active{background:#fff;color:#6544b0;box-shadow:0 3px 11px rgba(69,42,112,.10)}
+.subnav button.on,.prep-tabs button.active,.monthbar button.active{background:#7153b8;color:#fff;border-color:#7153b8}
+.subnav button,.prep-tabs button,.monthbar button{border-color:#e9e1ef;color:#7b6b94}
+.toolbar{border-color:#e9e0f0;background:#fff}
+.toolbar input,.toolbar select{background:#fcfaff;border-color:#ebe4f2}
+.product{border-color:#e9e0f0;background:#fff;border-radius:21px;box-shadow:var(--shadow)}
+.product-body{gap:10px}
+.subline,.go{color:#7654b7}
+.product h3{color:#322645}
+.product p{color:#6f637e}
+.review,.compare-product .compare-review{background:#f6f0fc;color:#6d568c}
+.review strong{color:#7b5cb7}
+.review-fold,.product-review-widget{border-color:#eee4f4}
+.review-fold summary,.product-review-widget>summary{color:#7155aa}
+.review-meter{background:#f2ecfc;color:#7957ba}
+.review-meter-empty{background:#faf7fc;color:#9589a3}
+.map-shell,.month-main,.month-safety,.rec-formbox,.rec-listbox,.playdate-formbox,.playdate-listbox,.compare-wrap{border-color:#e8e0ef;box-shadow:var(--shadow)}
+.map-switch button.on,.rec-formbox button[type=submit],.playdate-form button[type=submit],.compare-tabs button.on{background:#7355b8;color:#fff;border-color:#7355b8}
+.location,.playdate-item,.recent-item{border-color:#e9e1f0}
+.recent-item b{color:#514078}
+.recent-item small{color:#907da7}
+.rec-post a,.location-links a{color:#6e53aa}
+.fruit-prep-card{border-color:#ebe2f3;background:#fff}
+.prep-progress{background:#f3edfc;border-color:#e9dff5}
+.prep-check input{accent-color:#7a59be}
+.planner-frame{border-color:#e8dff0}
+.footer{border-top-color:#ece4f1;color:#a89db5}
+.kakao-openchat{background:#fee500;color:#332b00;border-color:#f7de00}
+@media(max-width:1000px){.categories{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:650px){
+ .categories{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .category{padding:15px;min-height:145px}
+ .category:first-child{grid-column:span 2;min-height:130px}
+ .category:first-child b{font-size:17px}
+ .category b{font-size:14px}
+ .category .cat-go{right:13px;bottom:10px}
+ .group-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .group-tab{min-width:0;padding:11px 7px;font-size:12px}
+}
 </style>
 </head>
 <body>
@@ -348,6 +450,7 @@ a{color:var(--sage);text-decoration:none}.hide{display:none!important}
 </section>
 <section id="detail" class="detail" aria-live="polite">
  <div class="detail-head"><div><small>Singapore Parenting Guide</small><h2 id="sectionTitle"></h2><p id="sectionDescription"></p></div><button class="homebtn" id="backHome">← 전체 카테고리</button></div>
+ <nav id="groupTabs" class="group-tabs hide" aria-label="카테고리 내부 메뉴"></nav>
  <div id="subnav" class="subnav"></div>
  <div id="toolbar" class="toolbar"></div>
  <div id="outings" class="outing-layout hide">
@@ -408,12 +511,47 @@ const categories=[
 {id:'benefit',name:'부모급여 계산기',icon:'🧮',sub:'한국 방문 · 해외체류 · 수당',desc:'출입국 일정과 부모급여 계산'},
 {id:'living',name:'싱가포르 생활',icon:'🏡',sub:'비자 · 예방접종 · 헬퍼',desc:'실생활에 필요한 공식 안내'},
 {id:'recommendations',name:'추천 나누기',icon:'💌',sub:'제품 · 장소 · 경험 공유',desc:'육아 추천을 함께 모으는 공간'}];
+const navigationGroups=[
+ {id:'playdate',name:'플레이데이트',icon:'🧸',sub:'우리 아이 또래 친구 만나기',desc:'지역별·월령별 모임을 찾아보세요',tabs:['playdate']},
+ {id:'shopping',name:'장보기 · 육아용품',icon:'🛍️',sub:'먹거리 · 육아용품 · 과일 · 비교',desc:'실사용 후기와 추천 제품을 한곳에서',tabs:['grocery','gear','fruit','compare']},
+ {id:'health',name:'아기가 아플 때',icon:'🩺',sub:'병원 · 소아과 · 상비약',desc:'소아과와 약품 정보를 확인해 보세요',tabs:['clinic','medicine']},
+ {id:'goingout',name:'아이와 외출',icon:'🌿',sub:'키즈카페 · 나들이 · 여행 준비',desc:'가볼 만한 곳과 외출 준비물',tabs:['outing','prep']},
+ {id:'preschool',name:'어린이집 · 교육',icon:'🏫',sub:'유치원 · Infant Care · PG',desc:'교육기관 가이드와 방문 후기',tabs:['preschool']},
+ {id:'livinggroup',name:'싱가포르 생활',icon:'🏡',sub:'생활 정보 · 부모급여 계산기',desc:'싱가포르 생활과 육아 행정',tabs:['living','benefit']},
+ {id:'recommendations',name:'우리들의 추천',icon:'💌',sub:'제품 · 장소 · 경험 공유',desc:'육아 경험을 함께 모아가요',tabs:['recommendations']}
+];
+const findNavigationGroup=id=>navigationGroups.find(g=>g.id===id||g.tabs.includes(id));
 const labels={all:'전체', '0-6m':'0–6개월','6-12m':'6–12개월','12-24m':'12–24개월','24m+':'24개월 이상',parents:'부모/공통'};
 const regionNames={All:'전체 지역',Central:'Central',East:'East',West:'West',North:'North',South:'South',Unknown:'기타'};
 const state={category:null,sub:'전체',age:'all',outingMonth:null,region:'All',kind:'전체',search:'',rating:'전체'};let map=null,markerLayer=null;
 const $=(s)=>document.querySelector(s);const e=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function mountCats(){ $('#categories').innerHTML=categories.map(x=>`<button class="category ${state.category===x.id?'selected':''}" data-cat="${x.id}"><span class="cat-art">${x.icon}</span><b>${e(x.name)}</b><small>${e(x.sub)}</small></button>`).join('');document.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>openCategory(b.dataset.cat));}
-function openCategory(id){const cat=categories.find(c=>c.id===id);if(!cat)return;Object.assign(state,{category:id,sub:'전체',age:'all',outingMonth:null,region:'All',kind:'전체',search:'',rating:'전체'});history.replaceState(null,'','#'+id);$('#homeLanding').classList.add('hide');$('#topHome').classList.add('visible');$('#sectionTitle').textContent=cat.name;$('#sectionDescription').textContent=cat.desc;$('#detail').classList.add('visible');render();window.scrollTo({top:0,behavior:'smooth'});}
+function mountCats(){ $('#categories').innerHTML=navigationGroups.map((g,i)=>'<button class="category category-'+i+'" type="button" data-cat="'+g.id+'"><span class="cat-art">'+g.icon+'</span><b>'+e(g.name)+'</b><small>'+e(g.sub)+'</small><span class="cat-go" aria-hidden="true">↗</span></button>').join('');document.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>openCategory(b.dataset.cat));}
+function setGroupTab(childId,updateHash=true){
+ const group=findNavigationGroup(childId);if(!group)return;
+ const chosen=group.tabs.includes(childId)?childId:group.tabs[0];
+ Object.assign(state,{category:chosen,group:group.id,sub:'전체',age:'all',outingMonth:null,region:'All',kind:'전체',search:'',rating:'전체'});
+ $('#sectionTitle').textContent=group.name;
+ $('#sectionDescription').textContent=group.desc;
+ const tabs=$('#groupTabs');
+ if(tabs){
+  const multiple=group.tabs.length>1;
+  tabs.classList.toggle('hide',!multiple);
+  tabs.innerHTML=multiple?group.tabs.map((id,i)=>{
+   const child=categories.find(c=>c.id===id);
+   const name=id==='grocery'?'로컬 장보기':id==='gear'?'육아용품':id==='fruit'?'월령별 과일':id==='compare'?'제품 비교':id==='clinic'?'병원 · 소아과':id==='medicine'?'약 · 상비약':id==='outing'?'키즈카페 · 나들이':id==='prep'?'외출 · 여행 체크리스트':id==='living'?'생활 정보':id==='benefit'?'부모급여 계산기':child?.name||id;
+   return '<button class="group-tab '+(id===chosen?'active':'')+'" data-group-child="'+id+'" type="button" aria-current="'+(id===chosen?'page':'false')+'">'+e(name)+'</button>'
+  }).join(''):'';
+  tabs.querySelectorAll('[data-group-child]').forEach(btn=>btn.onclick=()=>{setGroupTab(btn.dataset.groupChild);window.scrollTo({top:0,behavior:'smooth'})});
+ }
+ if(updateHash)history.replaceState(null,'','#'+chosen);
+ render();
+}
+function openCategory(id){
+ const group=findNavigationGroup(id);if(!group)return;
+ $('#homeLanding').classList.add('hide');$('#topHome').classList.add('visible');$('#detail').classList.add('visible');
+ setGroupTab(id);
+ window.scrollTo({top:0,behavior:'smooth'});
+}
 function returnHome(){state.category=null;history.replaceState(null,'',location.pathname);$('#detail').classList.remove('visible');$('#homeLanding').classList.remove('hide');$('#topHome').classList.remove('visible');window.scrollTo({top:0,behavior:'smooth'})}$('#backHome').onclick=returnHome;$('#topHome').onclick=returnHome;$('#brandHome').addEventListener('click',ev=>{ev.preventDefault();returnHome()});
 function getSubset(){return DATA.records.filter(x=>x.category===state.category)}
 function ageMatch(x){if(x.category==='outing')return state.outingMonth===null||(x.minAge??0)<=state.outingMonth;if(state.age==='all'||state.age==='parents')return true;return (x.age||[]).includes(state.age)}
@@ -935,6 +1073,6 @@ function initHeroGreeting(){
  document.addEventListener('visibilitychange',()=>{if(document.hidden){speech.classList.remove('is-visible');art.classList.remove('is-bouncing','show-hearts');}});
 }
 
-mountCats();mountHomeWidgets();initHeroGreeting();if(['grocery','clinic','medicine','gear','outing','preschool','fruit','living','prep','benefit','recommendations','playdate','compare'].includes(location.hash.slice(1)))openCategory(location.hash.slice(1));
+mountCats();mountHomeWidgets();initHeroGreeting();const deepLink=location.hash.slice(1);if(findNavigationGroup(deepLink))openCategory(deepLink);
 </script>
 </body></html>
