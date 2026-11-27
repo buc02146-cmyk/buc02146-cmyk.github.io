@@ -182,11 +182,17 @@ a{color:var(--sage);text-decoration:none}.hide{display:none!important}
 .kakao-openchat .kakao-bubble{font-size:15px;line-height:1}
 @media(max-width:760px){.header-actions{gap:7px}.kakao-openchat{padding:8px 10px;font-size:11px}.kakao-openchat .kakao-bubble{font-size:13px}}
 @media(max-width:380px){.kakao-openchat{gap:4px;padding:8px 7px;font-size:10px}.site-logo{font-size:14px!important}}
+
+.visitor-count{display:inline-flex;align-items:center;justify-content:center;gap:5px;border:1px solid #e1ece3;border-radius:999px;background:#f2f8f2;color:#607a65;padding:7px 10px;font-size:11px;font-weight:650;white-space:nowrap}
+.visitor-count strong{font-weight:850;color:#345b42;font-variant-numeric:tabular-nums}
+.visitor-count [aria-hidden]{font-size:12px}
+@media(max-width:760px){.visitor-count{padding:6px 8px;font-size:10px}.header-actions{gap:6px}.header-actions .topnote{display:none}}
+@media(max-width:425px){.visitor-count{padding:6px 7px}.visitor-count [aria-hidden]{display:none}.site-logo{font-size:14px}.kakao-openchat{font-size:10px;padding:8px 9px}}
 </style>
 </head>
 <body>
 
-<div class="topbar"><div class="topbar-inner"><a class="site-logo" href="/" id="brandHome"><span>✳</span> 싱가포르 육아백과</a><div class="header-actions"><span class="topnote">우리 가족의 싱가포르 육아 가이드</span><button id="topHome" class="home-link">카테고리 전체</button><a class="kakao-openchat" href="https://open.kakao.com/o/gKHZMCYi" target="_blank" rel="noopener noreferrer" aria-label="카카오톡 싱가포르 영유아 소통방 열기"><span class="kakao-bubble" aria-hidden="true">💬</span><span>카카오톡 오픈채팅</span><span aria-hidden="true">↗</span></a></div></div></div>
+<div class="topbar"><div class="topbar-inner"><a class="site-logo" href="/" id="brandHome"><span>✳</span> 싱가포르 육아백과</a><div class="header-actions"><span class="topnote">우리 가족의 싱가포르 육아 가이드</span><span class="visitor-count" id="todayVisitors" title="싱가포르 시간 기준 오늘 방문한 브라우저 수" aria-label="오늘 방문자 수"><span aria-hidden="true">👀</span> 오늘 <strong id="todayVisitorNumber">—</strong></span><button id="topHome" class="home-link">카테고리 전체</button><a class="kakao-openchat" href="https://open.kakao.com/o/gKHZMCYi" target="_blank" rel="noopener noreferrer" aria-label="카카오톡 싱가포르 영유아 소통방 열기"><span class="kakao-bubble" aria-hidden="true">💬</span><span>카카오톡 오픈채팅</span><span aria-hidden="true">↗</span></a></div></div></div>
 <main class="wrap">
 <section id="homeLanding" class="homeLanding">
  <div class="hero">
@@ -576,6 +582,24 @@ document.addEventListener('click',async event=>{
   await loadProductReviews(widget);
  }catch(err){alert(err.message);button.disabled=false;}
 });
+
+
+async function updateTodayVisitors(){
+ const field=document.querySelector('#todayVisitorNumber');
+ if(!field)return;
+ try{
+  const res=await fetch('/api/visitors/today',{method:'POST',credentials:'same-origin',cache:'no-store'});
+  if(!res.ok)throw Error('Count unavailable');
+  const data=await res.json();
+  if(!Number.isSafeInteger(data.visitors)||data.visitors<0)throw Error('Count invalid');
+  field.textContent=new Intl.NumberFormat('ko-KR').format(data.visitors);
+ }catch{
+  const badge=document.querySelector('#todayVisitors');
+  if(badge){badge.title='방문자 집계를 확인할 수 없습니다.';badge.setAttribute('aria-label','방문자 집계 확인 불가')}
+  field.textContent='—';
+ }
+}
+updateTodayVisitors();
 
 mountCats();if(['grocery','clinic','medicine','gear','outing','preschool','fruit','living','prep','benefit','recommendations'].includes(location.hash.slice(1)))openCategory(location.hash.slice(1));
 </script>
