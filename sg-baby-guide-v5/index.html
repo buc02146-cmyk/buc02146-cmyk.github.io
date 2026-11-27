@@ -768,7 +768,59 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
  .homeLanding .hero-speech{color:#f5e8ff!important}
  .playdate-join-dialog .join-privacy-note{color:#d5c4e5!important}
 }
-.recent-review-date{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap;color:#8465ae}@media(prefers-color-scheme:dark){.recent-review-date{color:#d6b9ff!important}}</style>
+.recent-review-date{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap;color:#8465ae}@media(prefers-color-scheme:dark){.recent-review-date{color:#d6b9ff!important}}
+/* Per-character speech bubbles: anchored over each toddler, never over faces. */
+.homeLanding #heroAnimation{padding-top:92px!important;--baby-talk-x:50%;isolation:isolate}
+.homeLanding #heroAnimation[data-speaker="0"]{--baby-talk-x:19%}
+.homeLanding #heroAnimation[data-speaker="1"]{--baby-talk-x:39%}
+.homeLanding #heroAnimation[data-speaker="2"]{--baby-talk-x:61%}
+.homeLanding #heroAnimation[data-speaker="3"]{--baby-talk-x:81%}
+.homeLanding #heroAnimation .hero-speech,
+.homeLanding #heroAnimation[data-speaker="0"] .hero-speech,
+.homeLanding #heroAnimation[data-speaker="1"] .hero-speech,
+.homeLanding #heroAnimation[data-speaker="2"] .hero-speech,
+.homeLanding #heroAnimation[data-speaker="3"] .hero-speech{
+ left:clamp(77px,var(--baby-talk-x),calc(100% - 77px))!important;
+ right:auto!important;
+ top:12px!important;
+ bottom:auto!important;
+ width:max-content!important;
+ min-width:0!important;
+ max-width:min(185px,85%)!important;
+ padding:10px 13px!important;
+ border-radius:16px 16px 7px 16px!important;
+ text-align:center!important;
+ white-space:normal!important;
+ line-height:1.45!important;
+ overflow-wrap:break-word!important;
+ transform:translate(-50%,12px) scale(.88)!important;
+ transform-origin:50% 100%!important;
+ pointer-events:none!important;
+}
+.homeLanding #heroAnimation .hero-speech.is-visible,
+.homeLanding #heroAnimation[data-speaker="0"] .hero-speech.is-visible,
+.homeLanding #heroAnimation[data-speaker="1"] .hero-speech.is-visible,
+.homeLanding #heroAnimation[data-speaker="2"] .hero-speech.is-visible,
+.homeLanding #heroAnimation[data-speaker="3"] .hero-speech.is-visible{
+ transform:translate(-50%,0) scale(1)!important;
+}
+.homeLanding #heroAnimation .hero-speech::after{
+ right:calc(50% - 7px)!important;left:auto!important;
+}
+@media(max-width:650px){
+ .homeLanding #heroAnimation{padding-top:91px!important}
+ .homeLanding #heroAnimation .hero-speech,
+ .homeLanding #heroAnimation[data-speaker] .hero-speech{
+  left:clamp(65px,var(--baby-talk-x),calc(100% - 65px))!important;
+  max-width:min(145px,90%)!important;
+  padding:9px 10px!important;
+  font-size:11px!important;
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ .homeLanding #heroAnimation .hero-speech{transition:none!important}
+}
+</style>
 </head>
 <body>
 
