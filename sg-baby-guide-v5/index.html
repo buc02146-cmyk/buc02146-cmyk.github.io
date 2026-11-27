@@ -151,6 +151,29 @@ a{color:var(--sage);text-decoration:none}.hide{display:none!important}
  .homeLanding .hero-art{max-width:185px;justify-self:end;margin:-2px 0 -25px;opacity:.85}
  .homeLanding .hero .eyebrow{font-size:10px}
 }
+
+.product-review-widget{border:1px solid #dfe9df;border-radius:14px;background:#f9fcf8;overflow:hidden}
+.product-review-widget>summary{padding:12px 13px;font-size:12px;font-weight:800;color:#466b51;cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:8px}
+.product-review-widget>summary::-webkit-details-marker{display:none}
+.product-review-widget>summary:after{content:'＋';font-size:16px;line-height:1}
+.product-review-widget[open]>summary:after{content:'−'}
+.product-review-inner{padding:0 13px 14px;border-top:1px solid #e3eee5}
+.product-review-feed{padding:12px 0 7px;font-size:12px;color:#7b8c80}
+.product-review-entry{border:1px solid #e7ebe5;border-radius:11px;background:white;padding:10px 12px;margin:8px 0}
+.product-review-entry .review-head{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.product-review-entry .review-head strong{font-size:12px;color:#526a57}
+.product-review-entry .review-head small{font-size:10px;color:#88948a}
+.product-review-entry .review-head .sentiment{display:inline-flex;font-size:10px;border-radius:99px;background:#edf6ee;color:#628068;padding:3px 7px}
+.product-review-entry .review-head .sentiment.bad{background:#faeee9;color:#a96956}
+.product-review-entry p{display:block!important;-webkit-line-clamp:unset!important;font-size:12px;margin:7px 0!important;white-space:pre-wrap;word-break:break-word;line-height:1.65;color:#556d5a}
+.product-review-entry .delete-review{border:0;background:none;color:#a86b65;text-decoration:underline;font-size:11px;cursor:pointer;padding:3px 0}
+.product-review-form{border-top:1px dashed #d9e8da;padding-top:12px;margin-top:7px;display:grid;gap:9px}
+.product-review-form label{display:grid;gap:5px;font-size:11px;font-weight:800;color:#647969}
+.product-review-form input,.product-review-form select,.product-review-form textarea{border:1px solid #dce7df;border-radius:9px;background:white;padding:9px;font-size:12px;width:100%;color:#3e5543}
+.product-review-form button[type=submit]{border:0;border-radius:10px;padding:10px;background:#547e61;color:white;font-size:12px;font-weight:800;cursor:pointer}
+.product-review-form button[disabled]{opacity:.55;cursor:wait}
+.product-review-status{font-size:11px;color:#52765d}
+.product-review-privacy{display:block;margin-top:8px;font-size:10px;line-height:1.6;color:#9ca99b}
 </style>
 </head>
 <body>
@@ -289,7 +312,18 @@ function cardHTML(x){
  const review=x.review?'<details class="review-fold"><summary>이용 후기 보기</summary><div class="review">'+e(x.review)+'</div></details>':'';
  const warning=x.warning&&x.category==='medicine'?'<div class="note">'+e(x.warning)+'</div>':'';
  const link=x.url?'<a class="go" href="'+e(x.url)+'" target="_blank" rel="noopener noreferrer">'+(x.category==='living'?'공식 상세 안내':'제품·상세 정보')+' ↗</a>':'';
- return '<article class="product">'+visual+'<div class="product-body">'+top+'<h3>'+e(x.title)+'</h3><p>'+e(x.desc||'')+'</p>'+warning+review+link+'</div></article>';
+ const productReviews=['grocery','gear','medicine'].includes(x.category)?
+ '<details class="product-review-widget" data-category="'+e(x.category)+'" data-title="'+e(x.title)+'">'
+ +'<summary>💬 이 제품의 후기 · 후기 남기기</summary>'
+ +'<div class="product-review-inner"><div class="product-review-feed" aria-live="polite">후기를 불러오는 중입니다…</div>'
+ +'<form class="product-review-form"><label>닉네임 (선택)<input name="nickname" maxlength="24" placeholder="익명"></label>'
+ +'<label>사용 경험<select name="sentiment"><option value="good">만족해요</option><option value="neutral">보통이에요</option><option value="bad">아쉬워요</option></select></label>'
+ +'<label>이 제품을 사용해 보니<textarea name="body" rows="3" minlength="8" maxlength="600" placeholder="사용해 본 장점이나 아쉬운 점을 남겨 주세요." required></textarea></label>'
+ +'<input type="text" name="website" class="honeypot" tabindex="-1" autocomplete="off">'
+ +'<button type="submit">후기 등록</button><span class="product-review-status" aria-live="polite"></span></form>'
+ +'<small class="product-review-privacy">후기는 다른 방문자에게 공개됩니다. 아이 이름이나 개인정보는 작성하지 마세요.</small></div></details>':'';
+
+ return '<article class="product">'+visual+'<div class="product-body">'+top+'<h3>'+e(x.title)+'</h3><p>'+e(x.desc||'')+'</p>'+warning+review+productReviews+link+'</div></article>';
 }
 
 
@@ -490,6 +524,50 @@ async function loadRecommendations(){
   }
  }catch(err){out.innerHTML='<div class="empty">'+e(err.message)+'</div>'}
 }
+
+
+function reviewText(sentiment){return sentiment==='bad'?'아쉬워요':sentiment==='neutral'?'보통이에요':'만족해요'}
+async function loadProductReviews(widget){
+ const category=widget.dataset.category,title=widget.dataset.title,feed=widget.querySelector('.product-review-feed');
+ if(!feed)return;
+ feed.textContent='후기를 불러오는 중입니다…';
+ try{
+  const query=new URLSearchParams({category,title});
+  const res=await fetch('/api/product-reviews?'+query.toString());
+  const data=await res.json();
+  if(!res.ok)throw Error(data.error||'후기를 불러오지 못했습니다.');
+  feed.innerHTML=data.items?.length?data.items.map(item=>{
+   const day=item.created_at?new Date(item.created_at).toLocaleDateString('ko-KR'):'';
+   return '<div class="product-review-entry"><div class="review-head"><strong>'+e(item.nickname||'익명')+'</strong><span class="sentiment '+(item.sentiment==='bad'?'bad':'')+'">'+reviewText(item.sentiment)+'</span><small>'+e(day)+'</small></div><p>'+e(item.body)+'</p><button type="button" class="delete-review" data-id="'+e(item.id)+'">관리자 삭제</button></div>';
+  }).join(''):'<div class="empty">아직 등록된 후기가 없어요. 첫 후기를 남겨주세요!</div>';
+ }catch(err){feed.innerHTML='<div class="empty">'+e(err.message)+'</div>';}
+}
+document.addEventListener('toggle',event=>{
+ const widget=event.target;if(!widget.matches?.('.product-review-widget')||!widget.open)return;
+ loadProductReviews(widget);
+},true);
+document.addEventListener('submit',async event=>{
+ const form=event.target;if(!form.matches?.('.product-review-form'))return;
+ event.preventDefault();const widget=form.closest('.product-review-widget'),button=form.querySelector('button[type="submit"]'),status=widget.querySelector('.product-review-status');
+ button.disabled=true;status.textContent='등록 중…';
+ try{
+  const value=Object.fromEntries(new FormData(form));
+  const res=await fetch('/api/product-reviews',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...value,category:widget.dataset.category,title:widget.dataset.title})});
+  const result=await res.json();if(!res.ok)throw Error(result.error||'등록에 실패했습니다.');
+  form.reset();status.textContent='후기가 등록됐습니다.';await loadProductReviews(widget);
+ }catch(err){status.textContent=err.message;}finally{button.disabled=false;}
+},true);
+document.addEventListener('click',async event=>{
+ const button=event.target.closest?.('.delete-review');if(!button)return;
+ const widget=button.closest('.product-review-widget');if(!confirm('이 후기를 삭제하시겠습니까?'))return;
+ const secret=prompt('관리자 삭제 비밀번호를 입력해 주세요.');if(!secret)return;
+ button.disabled=true;
+ try{
+  const res=await fetch('/api/product-reviews/'+encodeURIComponent(button.dataset.id),{method:'DELETE',headers:{'x-admin-secret':secret}});
+  const result=await res.json();if(!res.ok)throw Error(result.error||'삭제할 수 없습니다.');
+  await loadProductReviews(widget);
+ }catch(err){alert(err.message);button.disabled=false;}
+});
 
 mountCats();if(['grocery','clinic','medicine','gear','outing','preschool','fruit','living','prep','benefit','recommendations'].includes(location.hash.slice(1)))openCategory(location.hash.slice(1));
 </script>
