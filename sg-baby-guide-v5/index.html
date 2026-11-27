@@ -242,7 +242,7 @@ a{color:var(--sage);text-decoration:none}.hide{display:none!important}
 @media(max-width:600px){.home-playdate{padding:17px}.home-playdate-head{flex-wrap:wrap}.home-playdate h2{font-size:22px}.home-playdate-grid,.recent-grid{grid-template-columns:1fr}.compare-products{grid-template-columns:1fr 1fr}.compare-product{padding:10px}.compare-product img{height:92px}.compare-product h4{font-size:13px}.playdate-formbox,.playdate-listbox,.compare-wrap{padding:16px}}
 .product-review-form .photo-consent{display:flex;flex-direction:row;align-items:flex-start;gap:8px;line-height:1.6;font-weight:500;font-size:11px;color:#819181}
 .product-review-form .photo-consent input{width:auto;flex:0 0 auto;margin-top:3px;accent-color:#668e70}
-.search-group-label{display:block;color:#6f9376;font-size:11px;font-weight:800;margin:14px 2px 7px}.global-results>div{display:grid;gap:6px}</style>
+.search-group-label{display:block;color:#6f9376;font-size:11px;font-weight:800;margin:14px 2px 7px}.global-results>div{display:grid;gap:6px}.recent-review-photo{width:100%;max-height:145px;object-fit:contain;border-radius:10px;background:#f6f9f6;margin-top:9px}</style>
 </head>
 <body>
 
@@ -299,7 +299,7 @@ a{color:var(--sage);text-decoration:none}.hide{display:none!important}
 </div>
 
  <div class="home-search"><label for="globalSearch">🔎 찾고 싶은 육아 정보가 있나요?</label><div class="home-search-row"><input id="globalSearch" type="search" autocomplete="off" placeholder="제품, 키즈카페, 병원, 후기 검색"><button id="globalSearchClear" type="button" aria-label="검색 지우기">지우기</button></div><div id="globalResults" class="global-results hide"></div></div>
- <section class="home-playdate" aria-labelledby="homePlaydateTitle"><div class="home-playdate-head"><div><span class="eyebrow">MEET & PLAY</span><h2 id="homePlaydateTitle">🧸 이번 주 플레이데이트</h2><p>가까운 동네에서 우리 아이 또래 친구를 찾아보세요.</p></div><button id="homePlaydateOpen" type="button">모임 모집하기 ↗</button></div><div id="homePlaydateList" class="home-playdate-grid"><p class="muted">모임 정보를 불러오는 중입니다…</p></div></section>
+ <section class="home-playdate" aria-labelledby="homePlaydateTitle"><div class="home-playdate-head"><div><span class="eyebrow">MEET & PLAY</span><h2 id="homePlaydateTitle">🧸 곧 열리는 플레이데이트</h2><p>가까운 동네에서 우리 아이 또래 친구를 찾아보세요.</p></div><button id="homePlaydateOpen" type="button">모임 모집하기 ↗</button></div><div id="homePlaydateList" class="home-playdate-grid"><p class="muted">모임 정보를 불러오는 중입니다…</p></div></section>
  <div class="home-heading"><h2>카테고리 둘러보기</h2><p>필요한 주제를 선택해 주세요</p></div>
  <div id="categories" class="categories"></div>
  <section class="home-recent"><div class="home-heading"><h2>💬 새로 올라온 사용 후기</h2><p>직접 경험한 이야기를 확인해 보세요</p></div><div id="homeRecentReviews" class="recent-grid"><p class="muted">최신 후기를 불러오는 중입니다…</p></div></section>
@@ -823,7 +823,7 @@ async function loadHomeRecentReviews(){
  const root=document.querySelector('#homeRecentReviews');if(!root)return;
  try{
   const res=await fetch('/api/recent-reviews',{cache:'no-store'});const d=await res.json();if(!res.ok)throw Error(d.error||'불러올 수 없습니다.');
-  root.innerHTML=d.items?.length?d.items.map(x=>'<button type="button" class="recent-item" data-cat="'+e(x.category)+'" data-title="'+e(x.product_title)+'"><small>'+e(x.nickname||'익명')+' · '+reviewText(x.sentiment)+'</small><b>'+e(x.product_title)+'</b><p>'+e(x.body)+'</p></button>').join(''):'<div class="recent-item"><b>첫 사용 후기를 기다리고 있어요</b><p>제품 카드를 열어 여러분의 경험을 남겨주세요.</p></div>';
+  root.innerHTML=d.items?.length?d.items.map(x=>'<button type="button" class="recent-item" data-cat="'+e(x.category)+'" data-title="'+e(x.product_title)+'"><small>'+e(x.nickname||'익명')+' · '+reviewText(x.sentiment)+'</small><b>'+e(x.product_title)+'</b>'+(x.has_photo?'<img class="recent-review-photo" src="/api/review-photos/'+encodeURIComponent(x.id)+'" alt="방문자가 첨부한 제품 사진" loading="lazy">':'')+'<p>'+e(x.body)+'</p></button>').join(''):'<div class="recent-item"><b>첫 사용 후기를 기다리고 있어요</b><p>제품 카드를 열어 여러분의 경험을 남겨주세요.</p></div>';
   root.querySelectorAll('[data-cat]').forEach(btn=>btn.onclick=()=>{
    openCategory(btn.dataset.cat);
    state.search=btn.dataset.title;
