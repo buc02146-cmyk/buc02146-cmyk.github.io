@@ -174,11 +174,19 @@ a{color:var(--sage);text-decoration:none}.hide{display:none!important}
 .product-review-form button[disabled]{opacity:.55;cursor:wait}
 .product-review-status{font-size:11px;color:#52765d}
 .product-review-privacy{display:block;margin-top:8px;font-size:10px;line-height:1.6;color:#9ca99b}
+
+.header-actions{display:flex;align-items:center;gap:12px;margin-left:auto}
+.header-actions .topnote{white-space:nowrap}
+.kakao-openchat{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 15px;border-radius:999px;background:#fee500;color:#352e00;font-size:12px;font-weight:800;white-space:nowrap;text-decoration:none;border:1px solid #f5dc00;transition:transform .15s,background .15s}
+.kakao-openchat:hover{background:#ffeb30;transform:translateY(-1px);color:#352e00}
+.kakao-openchat .kakao-bubble{font-size:15px;line-height:1}
+@media(max-width:760px){.header-actions{gap:7px}.kakao-openchat{padding:8px 10px;font-size:11px}.kakao-openchat .kakao-bubble{font-size:13px}}
+@media(max-width:380px){.kakao-openchat{gap:4px;padding:8px 7px;font-size:10px}.site-logo{font-size:14px!important}}
 </style>
 </head>
 <body>
 
-<div class="topbar"><div class="topbar-inner"><a class="site-logo" href="/" id="brandHome"><span>✳</span> 싱가포르 육아백과</a><span class="topnote">우리 가족의 싱가포르 육아 가이드</span><button id="topHome" class="home-link">카테고리 전체</button></div></div>
+<div class="topbar"><div class="topbar-inner"><a class="site-logo" href="/" id="brandHome"><span>✳</span> 싱가포르 육아백과</a><div class="header-actions"><span class="topnote">우리 가족의 싱가포르 육아 가이드</span><button id="topHome" class="home-link">카테고리 전체</button><a class="kakao-openchat" href="https://open.kakao.com/o/gKHZMCYi" target="_blank" rel="noopener noreferrer" aria-label="카카오톡 싱가포르 영유아 소통방 열기"><span class="kakao-bubble" aria-hidden="true">💬</span><span>카카오톡 오픈채팅</span><span aria-hidden="true">↗</span></a></div></div></div>
 <main class="wrap">
 <section id="homeLanding" class="homeLanding">
  <div class="hero">
