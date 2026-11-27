@@ -1,6 +1,6 @@
 // Cloudflare Pages advanced worker, with a D1 binding named DB.
 const CATEGORIES=new Set(["grocery","clinic","medicine","gear","outing","preschool","fruit","living","prep"]);
-const LISTING_SUBCATEGORIES={"grocery":["치즈","요거트","분유","버터","떡뻥·간식","이유식 재료","생선·단백질","이유식·간편식","기타"],"gear":["기저귀","유모차","보습 로션·크림","이유식용품","목욕용품","위생·건강","기타"],"outing":["관람·체험","실내 놀이터","야외","식당"]};
+const LISTING_SUBCATEGORIES={"grocery":["치즈","요거트","분유","버터","떡뻥·간식","이유식 재료","생선·단백질","이유식·간편식","기타"],"gear":["기저귀","유모차","보습 로션·크림","이유식용품","목욕용품","위생·건강","기타"],"outing":["관람·체험","실내 놀이터","야외","식당"],"clinic":["소아과·병원","치과","기타 의료기관"],"medicine":["상비약","기타"],"preschool":["유치원 후기","Infant Care","Childcare","기타 교육"],"living":["예방접종","건강 가이드","어린이집","비자","도우미","기타 생활 정보"]};
 const LISTING_REGIONS=new Set(["West","North","Central","East","South","Unknown"]);
 const CURATED_LISTINGS=new Set(["grocery:Organic Valley Baby Swiss","grocery:Arla Natural Mozzarella Block 200g","grocery:Tamar Valley Greek Style Yoghurt","grocery:Jalna Greek Yoghurt","grocery:Lurpak Unsalted Butter 250g","grocery:질마재 유기농 현미귀리 스틱","gear:Nosiboo Pro 콧물흡입기","gear:MamyPoko Air Fit Marshmallow 팬티","gear:하기스 네이처메이드","gear:하기스 네이처메이드 오버나이트","gear:Pampers Premium Care","gear:Rascal + Friends 밤기저귀","gear:Merries Premium","gear:Doona","gear:Bugaboo Dragonfly","gear:Stokke YOYO3","gear:Silver Cross Dune","outing:Singapore Oceanarium","outing:Curiosity Cove","outing:Exploria","outing:National Gallery Singapore","outing:Children’s Museum Singapore","outing:Jacob Ballas Children’s Garden","outing:Kiztopia @ Jewel Changi","outing:Kiztopia @ New Bahru","outing:Paragon 실내 미끄럼틀 (Paragon Junior)","outing:HomeTeamNS T-Play @ Bukit Batok","outing:Marché @ 313 Somerset","outing:Marché @ VivoCity","outing:Amazonia @ Great World","outing:T-Play · 지점 미확인 후기","grocery:Fassler Sashimi Grade Salmon Portion Skinless (3pcs)","gear:Cetaphil Baby Daily Lotion","gear:Mustela Hydra Bébé Body Lotion","gear:ATOPALM MLE Cream","gear:Physiogel Calming Relief A.I. Cream","gear:Aveeno Baby Daily Moisture Lotion","gear:Richell Hinyari Shinai Bath Chair R","gear:Sudocrem Antiseptic Healing Cream","gear:Konny Bib Muslin Bandana","grocery:맘마밀 실온 이유식","gear:ATOPALM MLE Lotion","gear:Physiogel Soothing Care A.I. Cream","gear:ZEROID Intensive Oint-Cream","gear:Richell Soft Baby Chair","gear:Shnuggle Baby Bath","grocery:Aptamil Gold+ Infant Milk Formula Stage 1 900g","grocery:Nestlé NAN OPTIPRO Stage 1 800g","grocery:Abbott Similac Infant Milk Formula Stage 1 850g"]);
 const H={"content-type":"application/json; charset=utf-8","cache-control":"no-store"};
@@ -247,7 +247,7 @@ export default {async fetch(req,env){
           FROM listing_ratings
           WHERE place_key LIKE 'curated:%' OR EXISTS (
             SELECT 1 FROM recommendations r
-            WHERE r.id=substr(place_key,11) AND r.approved=1 AND r.listing_subcategory IS NOT NULL
+            WHERE r.id=substr(place_key,11) AND r.approved=1 AND r.category IN ('grocery','gear','outing') AND r.listing_subcategory IS NOT NULL
           )
           GROUP BY place_key
         `).bind(hash).all();
@@ -268,7 +268,7 @@ export default {async fetch(req,env){
         const saved=await env.DB.prepare(`
           INSERT INTO listing_ratings(place_key,browser_hash,stars)
           SELECT ?,?,? FROM recommendations
-          WHERE id=? AND approved=1 AND listing_subcategory IS NOT NULL
+          WHERE id=? AND approved=1 AND category IN ('grocery','gear','outing') AND listing_subcategory IS NOT NULL
           ON CONFLICT(place_key,browser_hash) DO UPDATE SET stars=excluded.stars
         `).bind(placeKey,hash,stars,placeKey.slice(10)).run();
         if(!saved.meta?.changes)return reply({error:"항목을 찾을 수 없습니다."},404);
