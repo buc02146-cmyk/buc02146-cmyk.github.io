@@ -1035,7 +1035,10 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 .clinic-region-heading{grid-column:1 / -1;margin:12px 0 0;font-size:17px;color:#694395}
 .clinic-card-area{margin:4px 0;color:#6f5c85;font-size:13px}
 @media(prefers-color-scheme:dark){.clinic-region-heading,.clinic-card-area{color:#e2c9f8}}
-.review-fold-author{display:block;margin-bottom:4px;font-size:12px;font-weight:800}
+.review-fold-meta{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:4px}
+.review-fold-author{font-size:12px;font-weight:800;min-width:0;overflow-wrap:anywhere}
+.review-fold-date{margin-inline-start:auto;white-space:nowrap;text-align:right;font-size:11px;color:inherit}
+.review-fold .recent-review-actions{margin-top:8px}
 .review-fold-text{white-space:pre-wrap}
 .listing-age-bands{margin:0;padding:8px 10px;border:1px solid #e0cfee;border-radius:9px}
 .listing-age-bands legend{padding:0 4px;font-size:12px;font-weight:750}
@@ -1154,6 +1157,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
    <label id="listingNameLabel" for="listingName"></label><input id="listingName" name="title" minlength="2" maxlength="90" required>
    <label>닉네임 (선택)<input name="nickname" minlength="2" maxlength="24" placeholder="익명" autocomplete="nickname"></label>
    <label>관련 링크 (선택)<input name="url" type="url" maxlength="600" placeholder="https://"></label>
+   <small class="source-note">사진을 첨부하지 않으면 지원되는 링크에서 대표 사진을 가져옵니다.</small>
    <label>추천 이유<textarea name="reason" rows="3" minlength="8" maxlength="400" required></textarea></label>
    <label>사진 한 장 (선택)<input name="photoFile" type="file" accept="image/jpeg,image/png,image/webp"></label>
    <label class="listing-photo-choice"><input name="photo_consent" type="checkbox"> 직접 찍은 사진이며, 공개할 수 있고 개인정보가 포함되지 않았습니다.</label>
@@ -1264,6 +1268,7 @@ function authorHeaders(extra={}){
  return {...extra,'x-sgbg-author':authorToken};
 }
 const listingPhotoUrl=id=>'/api/listing-photos/'+encodeURIComponent(id);
+const listingImage=item=>item.has_photo?listingPhotoUrl(item.id):(item.link_photo_url||'');
 let communityListings=[],recommendationPosts=[];
 function recommendationActions(item){
  const id=item.communityId||item.id;
@@ -1297,7 +1302,8 @@ const listingKey=item=>item.communityId?'community:'+item.communityId:'curated:'
 function toCommunityListing(item){
  return {communityId:item.id,category:item.category,title:item.title,sub:item.listing_subcategory,
   kind:item.listing_subcategory,region:item.listing_region||'Unknown',nickname:item.nickname||'익명',
-  owned:Boolean(item.owned),photo:item.has_photo?listingPhotoUrl(item.id):'',
+  owned:Boolean(item.owned),photo:listingImage(item),uploadedPhoto:Boolean(item.has_photo),
+  createdAt:item.created_at,helpfulCount:item.helpful_count||0,helped:Boolean(item.helped),
   age:item.listing_age||[],minAge:item.listing_min_month??null,
   url:item.url,desc:'',review:item.reason,status:item.category==='outing'?'good':undefined,icon:item.category==='grocery'?'🛒':'🧸'};
 }
@@ -1346,7 +1352,7 @@ function openListingDialog(category='',entry=null){
  categorySelect.value=category;
  syncListingFields(form);
  form.dataset.editId=entry?.communityId||entry?.id||'';
- const hasPhoto=Boolean(entry?.photo||entry?.has_photo);
+ const hasPhoto=Boolean(entry?.uploadedPhoto||entry?.has_photo);
  $('#removeListingPhoto').hidden=!hasPhoto;
  form.elements.namedItem('remove_photo').disabled=!hasPhoto;
  if(entry){
@@ -1398,7 +1404,8 @@ function initListingDialog(){
    const res=await fetch(endpoint,{method:id?'PATCH':'POST',headers:authorHeaders({'content-type':'application/json'}),body:JSON.stringify(values)});
    const result=await res.json();
    if(!res.ok||!result.id)throw Error(result.error||'등록하지 못했습니다.');
-   const entry=toCommunityListing({...values,id:result.id,owned:true,has_photo:result.has_photo});
+   const previous=communityListings.find(item=>item.communityId===result.id);
+   const entry=toCommunityListing({...values,...result,owned:true,helpful_count:previous?.helpfulCount,helped:previous?.helped});
    communityListings=[entry,...communityListings.filter(item=>item.communityId!==entry.communityId)];
    dialog.close();
    if(state.category!==entry.category)openCategory(entry.category);
@@ -1424,6 +1431,8 @@ function initListingDialog(){
   }
   const remove=event.target.closest('[data-listing-delete]');
   if(remove){deleteOwnRecommendation(remove);return;}
+  const helpful=event.target.closest('.recent-helpful[data-listing-id]');
+  if(helpful){markReviewHelpful(helpful);return;}
   const button=event.target.closest('.listing-rating-stars button');
   if(button)saveListingRating(button);
  });
@@ -1460,8 +1469,15 @@ function imageMarkup(x){return x.photo?`<img src="${e(x.photo)}" alt="${e(x.titl
 
 function reviewFold(item,label){
  if(!item.review)return '';
- const author=item.communityId?'<strong class="review-fold-author">'+e(item.nickname||'익명')+'</strong>':'';
- return '<details class="review-fold"><summary>'+e(label)+'</summary><div class="review">'+author+'<div class="review-fold-text">'+e(item.review)+'</div></div></details>';
+ let details='',reaction='';
+ if(item.communityId){
+  const date=new Date(item.createdAt||'');
+  const dateLabel=Number.isNaN(date.getTime())?'':new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Singapore',year:'numeric',month:'2-digit',day:'2-digit'}).format(date);
+  const time=dateLabel?'<time class="review-fold-date" datetime="'+e(item.createdAt)+'">'+e(dateLabel)+'</time>':'';
+  details='<div class="review-fold-meta"><strong class="review-fold-author">'+e(item.nickname||'익명')+'</strong>'+time+'</div>';
+  reaction=helpfulButton(item.communityId,item.helpfulCount,item.helped,true);
+ }
+ return '<details class="review-fold"><summary>'+e(label)+'</summary><div class="review">'+details+'<div class="review-fold-text">'+e(item.review)+'</div>'+reaction+'</div></details>';
 }
 function cardHTML(x){
  const badge=x.status==='bad'?'비추천':x.status==='good'?'추천':'';
@@ -1673,7 +1689,8 @@ async function loadRecommendations(){
    const link=p.url?'<a href="'+e(p.url)+'" target="_blank" rel="nofollow noopener noreferrer">상품 · 장소 링크 ↗</a>':'';
    const erase=adminDeleteMode?'<button type="button" class="delete-post" data-delete="'+e(p.id)+'" aria-label="'+e(p.title)+' 글 삭제">삭제</button>':'';
    const date=p.created_at?new Date(p.created_at).toLocaleDateString('ko-KR'):'';
-   const photo=p.has_photo?'<img class="rec-listing-photo" src="'+listingPhotoUrl(p.id)+'" alt="'+e(p.title)+' 사진" loading="lazy">':'';
+   const photoUrl=listingImage(p);
+   const photo=photoUrl?'<img class="rec-listing-photo" src="'+e(photoUrl)+'" alt="'+e(p.title)+' 사진" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">':'';
    return '<article class="rec-post"><span>'+type+' · '+e(date)+'</span><h4>'+e(p.title)+'</h4><div class="rec-post-by">by '+e(p.nickname||'익명')+'</div><p>'+e(p.reason)+'</p>'+photo+recommendationActions(p)+'<div class="admin-row" style="margin-top:10px">'+link+erase+'</div></article>';
   }).join(''):'<div class="empty">아직 추천 글이 없습니다. 첫 추천을 남겨주세요!</div>';
   if(adminDeleteMode){
@@ -2062,20 +2079,23 @@ function shortReviewDate(timestamp){
  const month=parts.find(p=>p.type==='month')?.value,day=parts.find(p=>p.type==='day')?.value;
  return month&&day?month+'.'+day:'';
 }
+function helpfulButton(id,count,pressed,listing=false){
+ const attr=listing?'data-listing-id':'data-review-id';
+ return '<div class="recent-review-actions"><button type="button" class="recent-helpful" '+attr+'="'+e(id)+'" aria-pressed="'+Boolean(pressed)+'"'+(pressed?' aria-disabled="true"':'')+'>'
+  +'<span aria-hidden="true">👍</span> 도움됐어요! <span class="recent-helpful-count" aria-live="polite">'+(Number(count)||0)+'</span></button>'
+  +'<span class="recent-helpful-error" role="status"></span></div>';
+}
 function recentReviewCard(review){
  const date=shortReviewDate(review.created_at);
  const time=date?' <time datetime="'+e(review.created_at)+'" class="recent-review-date">· '+date+'</time>':'';
  const listing=review.kind==='listing';
- const src=listing?listingPhotoUrl(review.id):'/api/review-photos/'+encodeURIComponent(review.id);
- const photo=review.has_photo?'<img class="recent-review-photo" src="'+e(src)+'" alt="'+e(review.product_title)+' 첨부 사진" loading="lazy">':'';
+ const src=listing?listingImage(review):review.has_photo?'/api/review-photos/'+encodeURIComponent(review.id):'';
+ const photo=src?'<img class="recent-review-photo" src="'+e(src)+'" alt="'+e(review.product_title)+' 첨부 사진" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">':'';
  const categoryName=REC_CATEGORIES.find(([id])=>id===review.category)?.[1]||'추천';
  const type=listing?'새 추천 · '+categoryName:reviewText(review.sentiment);
- const pressed=Boolean(review.helped);
  return '<article class="recent-item"><button type="button" class="recent-review-link" data-cat="'+e(review.category)+'" data-title="'+e(review.product_title)+'">'
   +'<small>'+e(review.nickname||'익명')+' · '+e(type)+time+'</small><b>'+e(review.product_title)+'</b>'+photo+'<p>'+e(review.body)+'</p></button>'
-  +(listing?'':'<div class="recent-review-actions"><button type="button" class="recent-helpful" data-review-id="'+e(review.id)+'" aria-pressed="'+pressed+'"'+(pressed?' aria-disabled="true"':'')+'>'
-  +'<span aria-hidden="true">👍</span> 도움됐어요! <span class="recent-helpful-count" aria-live="polite">'+(Number(review.helpful_count)||0)+'</span></button>'
-  +'<span class="recent-helpful-error" role="status"></span></div>')+'</article>';
+  +(listing?'':helpfulButton(review.id,review.helpful_count,review.helped))+'</article>';
 }
 async function markReviewHelpful(button){
  if(button.getAttribute('aria-disabled')==='true')return;
@@ -2083,11 +2103,17 @@ async function markReviewHelpful(button){
  error.textContent='';
  button.setAttribute('aria-disabled','true');
  try{
-  const response=await fetch('/api/product-reviews/'+encodeURIComponent(button.dataset.reviewId)+'/helpful',{method:'POST'});
+  const listingId=button.dataset.listingId;
+  const path=listingId?'/api/recommendations/':'/api/product-reviews/';
+  const response=await fetch(path+encodeURIComponent(listingId||button.dataset.reviewId)+'/helpful',{method:'POST'});
   const data=await response.json();
   if(!response.ok)throw Error(data.error||'반응을 저장할 수 없습니다.');
   button.querySelector('.recent-helpful-count').textContent=String(data.helpful_count);
   button.setAttribute('aria-pressed','true');
+  if(listingId){
+   const item=communityListings.find(item=>item.communityId===listingId);
+   if(item){item.helpfulCount=data.helpful_count;item.helped=true;}
+  }
  }catch(err){
   button.removeAttribute('aria-disabled');
   error.textContent=err instanceof SyntaxError?'반응을 저장할 수 없습니다.':err.message;

@@ -21,6 +21,99 @@ async function helpfulBrowserHash(token){
 async function prepareHelpful(db){
   await db.prepare("CREATE TABLE IF NOT EXISTS review_helpful_votes (review_id TEXT NOT NULL REFERENCES product_reviews(id) ON DELETE CASCADE, browser_hash TEXT NOT NULL, PRIMARY KEY(review_id,browser_hash))").run();
 }
+const linkPhotoHosts=new Set([
+  "shopee.sg","www.shopee.sg","s.shopee.sg","sg.shp.ee","lazada.sg","www.lazada.sg","s.lazada.sg",
+  "fairprice.com.sg","www.fairprice.com.sg","coldstorage.com.sg","www.coldstorage.com.sg","littlefarms.com","www.littlefarms.com",
+  "watsons.com.sg","www.watsons.com.sg","guardian.com.sg","www.guardian.com.sg","konnybaby.com","www.konnybaby.com",
+  "mothercare.com.sg","www.mothercare.com.sg","motherswork.com.sg","www.motherswork.com.sg","toppingskids.com","www.toppingskids.com",
+  "kiztopia.com","www.kiztopia.com","mandai.com","www.mandai.com","rwsentosa.com","www.rwsentosa.com",
+  "klook.com","www.klook.com","amazon.sg","www.amazon.sg","maps.app.goo.gl","www.google.com","maps.google.com",
+  "kkh.com.sg","www.kkh.com.sg","nuh.com.sg","www.nuh.com.sg","kinderclinic.com.sg","www.kinderclinic.com.sg"
+]);
+function publicPhotoUrl(value,base){
+  if(typeof value!=="string"||value.length>1500||!value.trim())return null;
+  try{
+    const url=new URL(value,base);
+    if(url.protocol!=="https:"||url.username||url.password||url.port||
+       !/^(?:[a-z0-9-]+\.)+[a-z][a-z0-9-]*$/i.test(url.hostname)||
+       /\.(?:local|localhost|internal|test|invalid|example|onion|home|lan)$/i.test(url.hostname))return null;
+    return url;
+  }catch{return null}
+}
+function productImage(data){
+  if(Array.isArray(data))return data.map(productImage).find(Boolean);
+  if(!data||typeof data!=="object")return null;
+  if([data["@type"]].flat().includes("Product")){
+    const image=Array.isArray(data.image)?data.image[0]:data.image;
+    return typeof image==="string"?image:image?.url||image?.contentUrl;
+  }
+  return productImage(data["@graph"]);
+}
+async function findLinkPhoto(link){
+  let url=publicPhotoUrl(link);
+  if(!url||!linkPhotoHosts.has(url.hostname))return null;
+  const signal=AbortSignal.timeout(3500);
+  try{
+    for(let redirects=0;redirects<4;redirects++){
+      if(!linkPhotoHosts.has(url.hostname))return null;
+      const response=await fetch(url,{redirect:"manual",signal,headers:{accept:"text/html,application/xhtml+xml"}});
+      if(response.status>=300&&response.status<400){
+        const location=response.headers.get("location");
+        await response.body?.cancel();
+        url=publicPhotoUrl(location,url);
+        if(!url)return null;
+        continue;
+      }
+      if(!response.ok||!response.body||!/(?:text\/html|application\/xhtml\+xml)/i.test(response.headers.get("content-type")||"")){
+        await response.body?.cancel();
+        return null;
+      }
+      const reader=response.body.getReader(),decoder=new TextDecoder();
+      let html="",size=0;
+      try{
+        while(size<450000){
+          const {done,value}=await reader.read();
+          if(done)break;
+          html+=decoder.decode(value.subarray(0,450000-size),{stream:true});
+          size+=value.length;
+        }
+        html+=decoder.decode();
+      }finally{await reader.cancel().catch(()=>{})}
+      let og,other,structured,structuredText='';
+      const parser=new HTMLRewriter()
+        .on("meta",{element(element){
+          const name=(element.getAttribute("property")||element.getAttribute("name")||element.getAttribute("itemprop")||"").toLowerCase();
+          const image=publicPhotoUrl(element.getAttribute("content"),url)?.href;
+          if(!image)return;
+          if(name==="og:image"||name==="og:image:secure_url")og ||= image;
+          if(name==="twitter:image"||name==="twitter:image:src"||name==="image")other ||= image;
+        }})
+        .on('script[type="application/ld+json"]',{
+          text(chunk){
+            structuredText+=chunk.text;
+            if(!chunk.lastInTextNode)return;
+            try{structured ||= publicPhotoUrl(productImage(JSON.parse(structuredText)),url)?.href}catch{}
+            structuredText="";
+          }
+        });
+      await parser.transform(new Response(html,{headers:{"content-type":"text/html;charset=utf-8"}})).text();
+      return structured||og||other||null;
+    }
+  }catch{}
+  return null;
+}
+async function fillLinkPhotos(db,items){
+  const pending=items.filter(item=>item.url&&!item.has_photo&&!item.link_photo_checked).slice(0,3);
+  await Promise.all(pending.map(async item=>{
+    const photo=await findLinkPhoto(item.url);
+    const result=await db.prepare("UPDATE recommendations SET link_photo_url=?,link_photo_checked=1 WHERE id=? AND url=? AND photo_data IS NULL AND link_photo_checked IS NULL").bind(photo,item.id,item.url).run();
+    if(result.meta?.changes)item.link_photo_url=photo;
+  }));
+}
+const listingHelpfulCookie="sgbg_listing_helpful";
+async function prepareListingHelpful(db){
+  await db.prepare("CREATE TABLE IF NOT EXISTS listing_helpful_votes (listing_id TEXT NOT NULL REFERENCES recommendations(id) ON DELETE CASCADE, browser_hash TEXT NOT NULL, PRIMARY KEY(listing_id,browser_hash))").run();
+}
 async function ensureColumn(db,table,column,definition,columns){
   if(columns.some(item=>item.name===column))return;
   try{await db.prepare("ALTER TABLE "+table+" ADD COLUMN "+column+" "+definition).run()}
@@ -75,6 +168,8 @@ async function prepare(db){
   await ensureColumn(db,"recommendations","photo_data","TEXT",info.results||[]);
   await ensureColumn(db,"recommendations","listing_age","TEXT",info.results||[]);
   await ensureColumn(db,"recommendations","listing_min_month","INTEGER",info.results||[]);
+  await ensureColumn(db,"recommendations","link_photo_url","TEXT",info.results||[]);
+  await ensureColumn(db,"recommendations","link_photo_checked","INTEGER",info.results||[]);
 }
 export default {async fetch(req,env){
   const url=new URL(req.url);
@@ -89,13 +184,14 @@ export default {async fetch(req,env){
   const summaryPath=url.pathname==="/api/review-summary";
   const recentPath=url.pathname==="/api/recent-reviews";
   const listingRatingsPath=url.pathname==="/api/listing-ratings";
+  const listingHelpful=url.pathname.match(/^\/api\/recommendations\/([0-9a-fA-F-]{36})\/helpful$/);
   const helpfulPath=url.pathname.match(/^\/api\/product-reviews\/([0-9a-fA-F-]{36})\/helpful$/);
   const searchPath=url.pathname==="/api/search";
   const photoGet=url.pathname.match(/^\/api\/review-photos\/([0-9a-fA-F-]{36})$/);
   const listingPhoto=url.pathname.match(/^\/api\/listing-photos\/([0-9a-fA-F-]{36})$/);
   const playdateEdit=playdateDelete&&req.method==="PATCH";
   const recommendationEdit=deleteMatch&&req.method==="PATCH";
-  if(!deleteMatch&&!productDelete&&!productPath&&!visitorPath&&!playdatePath&&!playdateDelete&&!playdateJoin&&!summaryPath&&!recentPath&&!listingRatingsPath&&!helpfulPath&&!searchPath&&!photoGet&&!listingPhoto&&url.pathname!=="/api/recommendations"&&!isHealth)return env.ASSETS.fetch(req);
+  if(!deleteMatch&&!productDelete&&!productPath&&!visitorPath&&!playdatePath&&!playdateDelete&&!playdateJoin&&!summaryPath&&!recentPath&&!listingRatingsPath&&!helpfulPath&&!listingHelpful&&!searchPath&&!photoGet&&!listingPhoto&&url.pathname!=="/api/recommendations"&&!isHealth)return env.ASSETS.fetch(req);
   if((deleteMatch||productDelete||playdateDelete)&&req.method!=="DELETE"&&!playdateEdit&&!recommendationEdit)
     return reply({error:"허용되지 않은 요청입니다."},405);
   const adminAction=(playdateDelete&&!playdateEdit)||
@@ -279,7 +375,7 @@ export default {async fetch(req,env){
       const listingFeed=url.searchParams.get("include")==="listings"?`
         UNION ALL
         SELECT r.id,r.nickname,r.reason AS body,NULL AS sentiment,r.created_at,r.category,r.title AS product_title,
-          r.photo_data IS NOT NULL AS has_photo,0 AS helpful_count,0 AS helped,'listing' AS kind
+          r.photo_data IS NOT NULL AS has_photo,0 AS helpful_count,0 AS helped,'listing' AS kind,r.link_photo_url,r.url,r.link_photo_checked
         FROM recommendations r WHERE r.approved=1 AND r.listing_subcategory IS NOT NULL
       `:"";
       const rows=await env.DB.prepare(`
@@ -287,13 +383,15 @@ export default {async fetch(req,env){
           r.photo_data IS NOT NULL AS has_photo,
           (SELECT COUNT(*) FROM review_helpful_votes v WHERE v.review_id=r.id) AS helpful_count,
           EXISTS(SELECT 1 FROM review_helpful_votes v WHERE v.review_id=r.id AND v.browser_hash=?) AS helped,
-          'review' AS kind
+          'review' AS kind,NULL AS link_photo_url,NULL AS url,NULL AS link_photo_checked
         FROM product_reviews r WHERE r.approved=1
         ${listingFeed}
         ORDER BY created_at DESC,id DESC LIMIT 6
       `).bind(hash).all();
-      const headers=helpfulCookieHeaders(!existingToken&&(rows.results||[]).length?token:null);
-      return new Response(JSON.stringify({items:rows.results||[]}),{headers});
+      const items=rows.results||[];
+      if(listingFeed)await fillLinkPhotos(env.DB,items);
+      const headers=helpfulCookieHeaders(!existingToken&&items.some(item=>item.kind==="review")?token:null);
+      return new Response(JSON.stringify({items}),{headers});
     }
     if(listingRatingsPath){
       if(req.method!=="GET"&&req.method!=="POST")return reply({error:"허용되지 않은 요청입니다."},405);
@@ -338,21 +436,24 @@ export default {async fetch(req,env){
       const rating=await env.DB.prepare("SELECT COUNT(*) AS total,AVG(stars) AS average FROM listing_ratings WHERE place_key=?").bind(placeKey).first();
       return reply({...rating,place_key:placeKey,my_rating:stars});
     }
-    if(helpfulPath){
+    if(helpfulPath||listingHelpful){
       if(req.method!=="POST")return reply({error:"허용되지 않은 요청입니다."},405);
       if(req.headers.get("origin")&&req.headers.get("origin")!==url.origin)return reply({error:"허용되지 않은 사이트입니다."},403);
-      const token=helpfulBrowserToken(req);
+      const token=helpfulBrowserToken(req,listingHelpful?listingHelpfulCookie:helpfulCookieName);
       if(!token)return reply({error:"페이지를 새로고침한 뒤 다시 눌러 주세요."},409);
-      const id=helpfulPath[1];
+      const id=(listingHelpful||helpfulPath)[1];
       const hash=await helpfulBrowserHash(token);
-      await prepareHelpful(env.DB);
+      const source=listingHelpful?"recommendations":"product_reviews";
+      const votes=listingHelpful?"listing_helpful_votes":"review_helpful_votes";
+      const key=listingHelpful?"listing_id":"review_id";
+      await (listingHelpful?prepareListingHelpful(env.DB):prepareHelpful(env.DB));
       await env.DB.prepare(`
-        INSERT OR IGNORE INTO review_helpful_votes (review_id,browser_hash)
-        SELECT id,? FROM product_reviews WHERE id=? AND approved=1
+        INSERT OR IGNORE INTO ${votes} (${key},browser_hash)
+        SELECT id,? FROM ${source} WHERE id=? AND approved=1
       `).bind(hash,id).run();
       const review=await env.DB.prepare(`
-        SELECT (SELECT COUNT(*) FROM review_helpful_votes v WHERE v.review_id=r.id) AS helpful_count
-        FROM product_reviews r WHERE r.id=? AND r.approved=1
+        SELECT (SELECT COUNT(*) FROM ${votes} v WHERE v.${key}=r.id) AS helpful_count
+        FROM ${source} r WHERE r.id=? AND r.approved=1
       `).bind(id).first();
       if(!review)return reply({error:"후기를 찾을 수 없습니다."},404);
       return reply({helpful_count:review.helpful_count,helped:true});
@@ -410,11 +511,22 @@ export default {async fetch(req,env){
     if(isHealth)return reply({database:"connected",table:"ready",admin_delete_password:(env.ADMIN_DELETE_SECRET&&env.ADMIN_DELETE_SECRET.length>=8)?"configured":"not_configured"});
     if(req.method==="GET"&&!deleteMatch){
       const listings=url.searchParams.get("listings")==="1";
-      const columns="id,category,title,url,reason,nickname,created_at,listing_subcategory,listing_region,listing_age,listing_min_month,photo_data IS NOT NULL AS has_photo,COALESCE(author_hash=?,0) AS owned";
+      const existingToken=helpfulBrowserToken(req,listingHelpfulCookie);
+      const token=existingToken||crypto.randomUUID();
+      const hash=await helpfulBrowserHash(token);
+      await prepareListingHelpful(env.DB);
+      const columns=`r.id,r.category,r.title,r.url,r.reason,r.nickname,r.created_at,r.listing_subcategory,r.listing_region,
+        r.listing_age,r.listing_min_month,r.photo_data IS NOT NULL AS has_photo,r.link_photo_url,r.link_photo_checked,
+        COALESCE(r.author_hash=?,0) AS owned,
+        (SELECT COUNT(*) FROM listing_helpful_votes v WHERE v.listing_id=r.id) AS helpful_count,
+        EXISTS(SELECT 1 FROM listing_helpful_votes v WHERE v.listing_id=r.id AND v.browser_hash=?) AS helped`;
       const rows=await env.DB.prepare(listings
-        ?"SELECT "+columns+" FROM recommendations WHERE approved=1 AND listing_subcategory IS NOT NULL ORDER BY created_at DESC"
-        :"SELECT "+columns+" FROM recommendations WHERE approved=1 ORDER BY created_at DESC LIMIT 150").bind(author).all();
-      return reply({items:(rows.results||[]).map(item=>({...item,listing_age:JSON.parse(item.listing_age||"[]")}))});
+        ?"SELECT "+columns+" FROM recommendations r WHERE r.approved=1 AND r.listing_subcategory IS NOT NULL ORDER BY r.created_at DESC"
+        :"SELECT "+columns+" FROM recommendations r WHERE r.approved=1 ORDER BY r.created_at DESC LIMIT 150").bind(author,hash).all();
+      const items=rows.results||[];
+      await fillLinkPhotos(env.DB,items);
+      const headers=helpfulCookieHeaders(existingToken?null:token,listingHelpfulCookie);
+      return new Response(JSON.stringify({items:items.map(item=>({...item,listing_age:JSON.parse(item.listing_age||"[]")}))}),{headers});
     }
     if(req.method!=="POST"&&!recommendationEdit)return reply({error:"허용되지 않은 요청입니다."},405);
     if(recommendationEdit&&!author)return reply({error:"작성자만 수정할 수 있습니다."},403);
@@ -449,21 +561,29 @@ export default {async fetch(req,env){
     const sub=listingSubcategory||null,region=sub&&["outing","clinic"].includes(category)?listingRegion||"Unknown":null;
     if(recommendationEdit){
       const id=deleteMatch[1];
+      const previous=await env.DB.prepare("SELECT url,photo_data IS NOT NULL AS has_photo,link_photo_url,link_photo_checked FROM recommendations WHERE id=? AND approved=1 AND author_hash=?").bind(id,author).first();
+      if(!previous)return reply({error:"이 추천 글을 수정할 권한이 없습니다."},403);
+      const hasPhoto=d.photo===undefined?Boolean(previous.has_photo):Boolean(d.photo);
+      const sameLink=previous.url===link;
+      const linkPhoto=hasPhoto?(sameLink?previous.link_photo_url:null):await findLinkPhoto(link);
+      const linkChecked=hasPhoto?(sameLink?previous.link_photo_checked:null):1;
       const updated=await env.DB.prepare(`
         UPDATE recommendations SET category=?,title=?,url=?,reason=?,nickname=?,listing_subcategory=?,listing_region=?,
           photo_data=CASE WHEN ? THEN ? ELSE photo_data END,
           listing_age=CASE WHEN ? THEN ? ELSE listing_age END,
-          listing_min_month=CASE WHEN ? THEN ? ELSE listing_min_month END
+          listing_min_month=CASE WHEN ? THEN ? ELSE listing_min_month END,
+          link_photo_url=?,link_photo_checked=?
         WHERE id=? AND approved=1 AND author_hash=?
       `).bind(category,title,link,reason,nickname,sub,region,d.photo!==undefined?1:0,d.photo??null,
-        ages!==undefined?1:0,savedAges,month!==undefined?1:0,month??null,id,author).run();
+        ages!==undefined?1:0,savedAges,month!==undefined?1:0,month??null,linkPhoto,linkChecked,id,author).run();
       if(!updated.meta?.changes)return reply({error:"이 추천 글을 수정할 권한이 없습니다."},403);
-      const item=await env.DB.prepare("SELECT photo_data IS NOT NULL AS has_photo FROM recommendations WHERE id=?").bind(id).first();
-      return reply({ok:true,id,has_photo:item?.has_photo||0});
+      const item=await env.DB.prepare("SELECT photo_data IS NOT NULL AS has_photo,link_photo_url,created_at FROM recommendations WHERE id=?").bind(id).first();
+      return reply({ok:true,id,...item});
     }
     const id=crypto.randomUUID(),created_at=new Date().toISOString();
-    await env.DB.prepare("INSERT INTO recommendations (id,category,title,url,reason,created_at,approved,nickname,listing_subcategory,listing_region,photo_data,author_hash,listing_age,listing_min_month) VALUES (?,?,?,?,?,?,1,?,?,?,?,?,?,?)")
-      .bind(id,category,title,link,reason,created_at,nickname,sub,region,d.photo??null,author,savedAges,month??null).run();
-    return reply({ok:true,id,has_photo:d.photo?1:0},201);
+    const photo=d.photo?null:await findLinkPhoto(link);
+    await env.DB.prepare("INSERT INTO recommendations (id,category,title,url,reason,created_at,approved,nickname,listing_subcategory,listing_region,photo_data,author_hash,listing_age,listing_min_month,link_photo_url,link_photo_checked) VALUES (?,?,?,?,?,?,1,?,?,?,?,?,?,?,?,?)")
+      .bind(id,category,title,link,reason,created_at,nickname,sub,region,d.photo??null,author,savedAges,month??null,photo,d.photo?null:1).run();
+    return reply({ok:true,id,created_at,has_photo:d.photo?1:0,link_photo_url:photo},201);
   }catch(err){return reply({error:"데이터베이스 처리 중 오류가 발생했습니다. 배포 및 D1 설정을 확인해 주세요."},500)}
 }};
