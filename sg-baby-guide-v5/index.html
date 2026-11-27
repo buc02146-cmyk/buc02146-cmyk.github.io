@@ -547,6 +547,20 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
  .playdate-attendees{padding:9px}
 }
 @media(prefers-reduced-motion:reduce){.category,.recent-item,.home-playdate-head>button{transition:none!important}}
+
+.playdate-join-dialog{width:min(430px,calc(100vw - 32px));max-height:calc(100vh - 48px);border:1px solid #e7d7f4;border-radius:23px;padding:27px;background:#fffaff;color:#302342;box-shadow:0 25px 90px #2b164a55}
+.playdate-join-dialog::backdrop{background:rgba(45,28,68,.45);backdrop-filter:blur(4px)}
+.playdate-join-dialog .join-modal-icon{font-size:27px;display:grid;place-items:center;width:52px;height:52px;background:#f2e7fc;border-radius:16px;margin-bottom:13px}
+.playdate-join-dialog h3{font-size:24px;margin:0 0 7px;letter-spacing:-.05em;color:#38264e}
+.playdate-join-dialog .join-description{font-size:13px;color:#76618f;margin:0 0 20px}
+.playdate-join-dialog form label{display:block;font-size:12px;font-weight:800;color:#624b84;margin-bottom:7px}
+.playdate-join-dialog input{width:100%;border:1px solid #ddcdec;border-radius:12px;padding:13px 14px;font-size:15px;background:#fff}
+.playdate-join-dialog .join-privacy-note{font-size:11px;line-height:1.55;color:#9985a8;margin:10px 0}
+.playdate-join-dialog .join-error{font-size:12px;min-height:17px;color:#b84567;margin:9px 0}
+.playdate-join-dialog .join-modal-actions{display:flex;gap:9px}
+.playdate-join-dialog .join-modal-actions button{flex:1;border-radius:11px;padding:13px;font-weight:800;background:#f0e8f9;color:#6d5099;border:0}
+.playdate-join-dialog .join-modal-actions button[type=submit]{background:#7752b8;color:#fff}
+.playdate-join-dialog .join-modal-actions button:disabled{opacity:.58}
 </style>
 </head>
 <body>
@@ -656,7 +670,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
    </div>
    <div class="results-heading"><strong>가볼 만한 곳</strong><span id="regionResultLabel"></span></div><div id="locations" class="location-grid"></div>
  </div>
- <div id="fruits" class="fruits hide"></div><div id="prepPanel" class="hide"></div><div id="benefitPanel" class="hide"></div><div id="playdatePanel" class="hide"></div><div id="comparePanel" class="hide"></div><div id="recPanel" class="hide"></div><div id="cards" class="cards"></div><div id="disclaimer" class="disclaimer"></div>
+ <div id="fruits" class="fruits hide"></div><div id="prepPanel" class="hide"></div><div id="benefitPanel" class="hide"></div><div id="playdatePanel" class="hide"></div><dialog id="playdateJoinDialog" class="playdate-join-dialog" aria-labelledby="playdateJoinTitle"><div class="join-modal-icon">💜</div><h3 id="playdateJoinTitle">플레이데이트 참여하기</h3><p id="playdateJoinDescription" class="join-description"></p><form id="playdateJoinForm" novalidate><label for="joinNickname">카카오톡에서 사용하는 닉네임</label><input id="joinNickname" name="nickname" minlength="2" maxlength="24" required autocomplete="nickname" placeholder="예: 토끼맘"><p class="join-privacy-note">닉네임은 신청자 목록에 공개됩니다. 연락처나 아이 실명은 입력하지 마세요.</p><p id="joinError" class="join-error" role="alert"></p><div class="join-modal-actions"><button type="button" id="cancelJoin">취소</button><button type="submit" id="confirmJoin">참여 신청</button></div></form></dialog><div id="comparePanel" class="hide"></div><div id="recPanel" class="hide"></div><div id="cards" class="cards"></div><div id="disclaimer" class="disclaimer"></div>
 </section>
 </main><div class="footer">싱가포르 육아백과 · 함께 채워가는 육아 정보</div>
 
@@ -1123,6 +1137,32 @@ async function showPlaydateHome(){
   el.querySelectorAll('[data-playdate-open]').forEach(b=>b.onclick=()=>openCategory('playdate'));
  }catch(err){el.innerHTML='<p class="muted">'+e(err.message)+'</p>'}
 }
+let pendingPlaydateId=null;
+function openPlaydateJoin(p){
+ pendingPlaydateId=p.id;
+ const dlg=document.querySelector('#playdateJoinDialog');if(!dlg)return;
+ document.querySelector('#playdateJoinDescription').textContent=p.place+' · '+dateLabel(p.starts_at)+' · '+(Number(p.joined_count)||1)+'/'+p.capacity+'명';
+ document.querySelector('#joinError').textContent='';document.querySelector('#joinNickname').value='';
+ dlg.showModal?.();document.querySelector('#joinNickname').focus();
+}
+function initPlaydateJoinDialog(){
+ const dlg=document.querySelector('#playdateJoinDialog'),form=document.querySelector('#playdateJoinForm');
+ if(!dlg||!form)return;
+ document.querySelector('#cancelJoin').onclick=()=>dlg.close?.();
+ form.onsubmit=async ev=>{
+  ev.preventDefault();const name=document.querySelector('#joinNickname').value.trim().replace(/\s+/g,' ');
+  const err=document.querySelector('#joinError'),btn=document.querySelector('#confirmJoin');
+  if(!pendingPlaydateId||name.length<2||name.length>24){err.textContent='닉네임을 2~24자로 입력해 주세요.';return}
+  btn.disabled=true;btn.textContent='신청 중…';err.textContent='';
+  try{
+   const res=await fetch('/api/playdates/'+encodeURIComponent(pendingPlaydateId)+'/join',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({nickname:name})});
+   const result=await res.json();if(!res.ok)throw Error(result.error||'신청에 실패했습니다.');
+   dlg.close?.();await fetchPlaydates();showPlaydatePosts();showPlaydateHome();
+   const status=document.querySelector('#playdateStatus');
+   if(status)status.textContent='💜 '+name+'님의 참여 신청이 등록됐습니다. 자세한 일정은 카카오톡에서 조율해 주세요.';
+  }catch(ex){err.textContent=ex.message}finally{btn.disabled=false;btn.textContent='참여 신청'}
+ };
+}
 function showPlaydatePosts(){
  const wrap=document.querySelector('#playdateList');if(!wrap)return;
  const region=document.querySelector('#pdRegionFilter')?.value||'All';
@@ -1132,17 +1172,7 @@ function showPlaydatePosts(){
  wrap.innerHTML=list.map(p=>playdateCard(p)).join('')||'<div class="empty">현재 조건에 맞는 플레이데이트가 없습니다. 직접 모임을 열어 보세요.</div>';
  wrap.querySelectorAll('.playdate-join').forEach(btn=>btn.onclick=async()=>{
   const p=playdateCache.find(x=>x.id===btn.dataset.id);if(!p)return;
-  const name=window.prompt('플레이데이트에 참여할 닉네임을 입력해 주세요.\n신청자 목록에 공개됩니다.');
-  if(name===null)return;
-  const nickname=name.trim().replace(/\s+/g,' ');
-  if(nickname.length<2||nickname.length>24){window.alert('닉네임은 2~24자로 입력해 주세요.');return;}
-  btn.disabled=true;btn.textContent='신청 중…';
-  try{
-   const res=await fetch('/api/playdates/'+encodeURIComponent(p.id)+'/join',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({nickname})});
-   const out=await res.json();if(!res.ok)throw Error(out.error||'참여 신청을 완료하지 못했습니다.');
-   await fetchPlaydates();showPlaydatePosts();showPlaydateHome();
-   window.alert('참여 신청이 등록되었습니다! 모임장과 세부 조율은 카카오톡 오픈채팅에서 진행해 주세요.');
-  }catch(err){window.alert(err.message);btn.disabled=false;btn.textContent='💜 참여하기';}
+  openPlaydateJoin(p);
  });
  wrap.querySelectorAll('.playdate-copy').forEach(btn=>btn.onclick=async()=>{
   const p=playdateCache.find(x=>x.id===btn.dataset.id);if(!p)return;
@@ -1260,6 +1290,6 @@ function initHeroGreeting(){
  document.addEventListener('visibilitychange',()=>{if(document.hidden){speech.classList.remove('is-visible');art.classList.remove('is-bouncing','show-hearts');}});
 }
 
-mountCats();mountHomeWidgets();initHeroGreeting();const deepLink=location.hash.slice(1);if(findNavigationGroup(deepLink))openCategory(deepLink);
+mountCats();mountHomeWidgets();initHeroGreeting();initPlaydateJoinDialog();const deepLink=location.hash.slice(1);if(findNavigationGroup(deepLink))openCategory(deepLink);
 </script>
 </body></html>
