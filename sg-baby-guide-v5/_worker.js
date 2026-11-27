@@ -18,7 +18,8 @@ export default {async fetch(req,env){
   const deleteMatch=url.pathname.match(/^\/api\/recommendations\/([0-9a-fA-F-]{36})$/);
   const productDelete=url.pathname.match(/^\/api\/product-reviews\/([0-9a-fA-F-]{36})$/);
   const productPath=url.pathname==="/api/product-reviews";
-  if(!deleteMatch&&!productDelete&&!productPath&&url.pathname!=="/api/recommendations"&&!isHealth)return env.ASSETS.fetch(req);
+  const visitorPath=url.pathname==="/api/visitors/today";
+  if(!deleteMatch&&!productDelete&&!productPath&&!visitorPath&&url.pathname!=="/api/recommendations"&&!isHealth)return env.ASSETS.fetch(req);
   if((deleteMatch||productDelete)&&req.method!=="DELETE")return reply({error:"허용되지 않은 요청입니다."},405);
   if(deleteMatch||productDelete){
     if(!env.ADMIN_DELETE_SECRET||env.ADMIN_DELETE_SECRET.length<8)return reply({error:"관리자 삭제 비밀번호가 설정되지 않았습니다."},503);
@@ -31,6 +32,26 @@ export default {async fetch(req,env){
   }
   if(!env.DB)return reply(isHealth?{database:"not_connected",admin_delete_password:(env.ADMIN_DELETE_SECRET&&env.ADMIN_DELETE_SECRET.length>=8)?"configured":"not_configured",note:"Cloudflare Pages에서 DB 바인딩을 저장한 뒤 새 배포를 시작하세요."}:{error:"현재 배포에 DB 연결이 적용되지 않았습니다. Cloudflare Settings → Bindings에서 DB를 저장하고 Deployments에서 새로 배포해 주세요."},503);
   try{
+
+    if(visitorPath){
+      if(req.method!=="POST")return reply({error:"허용되지 않은 요청입니다."},405);
+      if(req.headers.get("origin")&&req.headers.get("origin")!==url.origin)return reply({error:"허용되지 않은 사이트입니다."},403);
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS daily_visitors (day TEXT NOT NULL, visitor_hash TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY(day,visitor_hash))").run();
+      const fmt=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Singapore",year:"numeric",month:"2-digit",day:"2-digit"});
+      const parts=Object.fromEntries(fmt.formatToParts(new Date()).map(x=>[x.type,x.value]));
+      const day=parts.year+"-"+parts.month+"-"+parts.day;
+      const cookie=(req.headers.get("cookie")||"").split(";").map(x=>x.trim()).find(x=>x.startsWith("sgbg_vid="));
+      const token=cookie?cookie.slice("sgbg_vid=".length):"";
+      const valid=/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/.test(token);
+      const id=valid?token:crypto.randomUUID();
+      const bytes=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(id));
+      const hash=Array.from(new Uint8Array(bytes),v=>v.toString(16).padStart(2,"0")).join("");
+      await env.DB.prepare("INSERT OR IGNORE INTO daily_visitors(day,visitor_hash,created_at) VALUES(?,?,?)").bind(day,hash,new Date().toISOString()).run();
+      const count=await env.DB.prepare("SELECT COUNT(*) AS total FROM daily_visitors WHERE day=?").bind(day).first();
+      const headers=new Headers(H);
+      if(!valid)headers.append("set-cookie","sgbg_vid="+id+"; Max-Age=31536000; Path=/; HttpOnly; Secure; SameSite=Lax");
+      return new Response(JSON.stringify({day,timezone:"Asia/Singapore",visitors:Number(count?.total||0)}),{status:200,headers});
+    }
     await prepare(env.DB);
     if(deleteMatch){
       const itemId=deleteMatch[1];
