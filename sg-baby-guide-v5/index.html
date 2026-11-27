@@ -2024,7 +2024,7 @@ function initHeroGreeting(){
   window.clearTimeout(clearSpeech);
   window.clearTimeout(clearEffects);
   clearEffects=window.setTimeout(()=>art.classList.remove('is-bouncing','show-hearts'),1600);
-  clearSpeech=window.setTimeout(()=>speech.classList.remove('is-visible'),2400);
+  clearSpeech=window.setTimeout(()=>speech.classList.remove('is-visible'),3400);
  };
  art.addEventListener('click',greet);
  art.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();greet();}});
