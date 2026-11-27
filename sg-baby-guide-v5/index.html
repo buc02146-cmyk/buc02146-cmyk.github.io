@@ -768,7 +768,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
  .homeLanding .hero-speech{color:#f5e8ff!important}
  .playdate-join-dialog .join-privacy-note{color:#d5c4e5!important}
 }
-</style>
+.recent-review-date{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap;color:#8465ae}@media(prefers-color-scheme:dark){.recent-review-date{color:#d6b9ff!important}}</style>
 </head>
 <body>
 
@@ -866,7 +866,7 @@ const navigationGroups=[
  {id:'shopping',name:'장보기 · 육아용품',icon:'🛍️',sub:'먹거리 · 육아용품 · 제품 비교',desc:'실사용 후기와 추천 제품을 한곳에서',tabs:['grocery','gear','compare']},
  {id:'fruit',name:'월령별 과일',icon:'🍓',sub:'6M~24M · 손질법 · 주의사항',desc:'우리 아기의 월령별 과일 가이드',tabs:['fruit']},
  {id:'health',name:'아기가 아플 때',icon:'🩺',sub:'병원 · 소아과 · 상비약',desc:'소아과와 약품 정보를 확인해 보세요',tabs:['clinic','medicine']},
- {id:'goingout',name:'아이와 외출',icon:'🌿',sub:'키즈카페 · 나들이 · 여행 준비',desc:'가볼 만한 곳과 외출 준비물',tabs:['outing','prep']},
+ {id:'goingout',name:'아이와 외출',icon:'🌿',sub:'키즈카페 · 나들이 · 외출·여행 체크리스트',desc:'월령별 나들이 장소와 외출·여행 준비 체크리스트',tabs:['outing','prep']},
  {id:'preschool',name:'어린이집 · 교육',icon:'🏫',sub:'유치원 · Infant Care · PG',desc:'교육기관 가이드와 방문 후기',tabs:['preschool']},
  {id:'livinggroup',name:'싱가포르 생활',icon:'🏡',sub:'예방접종 · 생활 · 행정',desc:'싱가포르 생활과 육아 행정',tabs:['living']},
  {id:'benefit',name:'부모급여 계산기',icon:'🧮',sub:'출입국 일정 · 수급 예상액',desc:'부모급여를 바로 계산해 보세요',tabs:['benefit']},
@@ -1405,11 +1405,19 @@ async function renderPlaydates(){
  document.querySelector('#pdMonthFilter').onchange=showPlaydatePosts;
  try{await fetchPlaydates();showPlaydatePosts()}catch(err){document.querySelector('#playdateList').innerHTML='<div class="empty">'+e(err.message)+'</div>'}
 }
+function shortReviewDate(timestamp){
+ if(!timestamp)return '';
+ const date=new Date(timestamp);
+ if(Number.isNaN(date.getTime()))return '';
+ const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Singapore',month:'2-digit',day:'2-digit'}).formatToParts(date);
+ const month=parts.find(p=>p.type==='month')?.value,day=parts.find(p=>p.type==='day')?.value;
+ return month&&day?month+'.'+day:'';
+}
 async function loadHomeRecentReviews(){
  const root=document.querySelector('#homeRecentReviews');if(!root)return;
  try{
   const res=await fetch('/api/recent-reviews',{cache:'no-store'});const d=await res.json();if(!res.ok)throw Error(d.error||'불러올 수 없습니다.');
-  root.innerHTML=d.items?.length?d.items.map(x=>'<button type="button" class="recent-item" data-cat="'+e(x.category)+'" data-title="'+e(x.product_title)+'"><small>'+e(x.nickname||'익명')+' · '+reviewText(x.sentiment)+'</small><b>'+e(x.product_title)+'</b>'+(x.has_photo?'<img class="recent-review-photo" src="/api/review-photos/'+encodeURIComponent(x.id)+'" alt="방문자가 첨부한 제품 사진" loading="lazy">':'')+'<p>'+e(x.body)+'</p></button>').join(''):'<div class="recent-item"><b>첫 사용 후기를 기다리고 있어요</b><p>제품 카드를 열어 여러분의 경험을 남겨주세요.</p></div>';
+  root.innerHTML=d.items?.length?d.items.map(x=>'<button type="button" class="recent-item" data-cat="'+e(x.category)+'" data-title="'+e(x.product_title)+'"><small>'+e(x.nickname||'익명')+' · '+reviewText(x.sentiment)+(shortReviewDate(x.created_at)?' <time datetime="'+e(x.created_at)+'" class="recent-review-date">· '+shortReviewDate(x.created_at)+'</time>':'')+'</small><b>'+e(x.product_title)+'</b>'+(x.has_photo?'<img class="recent-review-photo" src="/api/review-photos/'+encodeURIComponent(x.id)+'" alt="방문자가 첨부한 제품 사진" loading="lazy">':'')+'<p>'+e(x.body)+'</p></button>').join(''):'<div class="recent-item"><b>첫 사용 후기를 기다리고 있어요</b><p>제품 카드를 열어 여러분의 경험을 남겨주세요.</p></div>';
   root.querySelectorAll('[data-cat]').forEach(btn=>btn.onclick=()=>{
    openCategory(btn.dataset.cat);
    state.search=btn.dataset.title;
