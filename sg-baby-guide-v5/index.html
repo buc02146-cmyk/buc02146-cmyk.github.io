@@ -973,6 +973,17 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 }
 @media(prefers-reduced-motion:reduce){.hero-stardust{display:none}.hero-stardust span{animation:none}}
 #addListingButton,.add-listing-button{min-height:42px;padding:8px 14px;border:1px solid #d8c5ed;border-radius:10px;background:#f1e7fc;color:#64428d;font-weight:800}
+.listing-add-tile{
+ display:grid;place-content:center;justify-items:center;gap:6px;width:100%;min-height:110px;padding:16px;
+ border:1px dashed #bda4da;border-radius:16px;background:#fbf7ff;color:#64428d;font-weight:800
+}
+.listing-add-tile:hover{background:#f2e7fc;border-color:#8c62bf}
+.listing-add-tile:focus-visible{outline:2px solid #8c62bf;outline-offset:2px}
+.listing-add-tile-icon{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:#ebdcfa;font-size:21px;line-height:1}
+@media(prefers-color-scheme:dark){
+ .listing-add-tile{background:#312441;color:#f3e1ff;border-color:#8a6aa8}
+ .listing-add-tile:hover,.listing-add-tile-icon{background:#49335f}
+}
 .listing-dialog{width:min(460px,calc(100% - 28px));max-height:calc(100% - 28px);overflow:auto;color:var(--ink)}
 .listing-dialog::backdrop{background:#21153275}
 .listing-form-actions{display:flex;gap:8px;align-items:center}
@@ -1295,6 +1306,8 @@ function initListingDialog(){
   }catch(err){status.textContent=err.message}finally{button.disabled=false;}
  };
  $('#detail').addEventListener('click',event=>{
+  const add=event.target.closest('.listing-add-tile');
+  if(add){openListingDialog(add.dataset.category);return;}
   const button=event.target.closest('.listing-rating-stars button');
   if(button)saveListingRating(button);
  });
@@ -1381,14 +1394,18 @@ function renderSub(){
  document.querySelectorAll('#subnav [data-s]').forEach(btn=>btn.onclick=()=>{if(c==='outing')state.kind=btn.dataset.s;else state.sub=btn.dataset.s;renderSub();renderContent()});
 }
 
+function addListingTile(category){
+ if(!Object.hasOwn(LISTING_ITEM_NAMES,category))return '';
+ return '<button type="button" class="listing-add-tile" data-category="'+e(category)+'"><span class="listing-add-tile-icon" aria-hidden="true">+</span><span>'+e(LISTING_ITEM_NAMES[category])+' 추가하기</span></button>';
+}
 function render(){renderSub();renderToolbar();renderContent()}
-function renderContent(){const cat=state.category;$('#prepPanel').classList.toggle('hide',cat!=='prep');$('#benefitPanel').classList.toggle('hide',cat!=='benefit');$('#recPanel').classList.toggle('hide',cat!=='recommendations');$('#playdatePanel').classList.toggle('hide',cat!=='playdate');$('#comparePanel').classList.toggle('hide',cat!=='compare');$('#outings').classList.toggle('hide',cat!=='outing');$('#fruits').classList.toggle('hide',cat!=='fruit');$('#cards').classList.toggle('hide',['outing','fruit','prep','benefit','recommendations','playdate','compare'].includes(cat));$('#toolbar').classList.toggle('hide',['prep','benefit','fruit','recommendations','playdate','compare'].includes(cat));if(cat==='prep'){renderPrep();$('#disclaimer').textContent='';return}if(cat==='benefit'){renderBenefit();$('#disclaimer').textContent='';return}if(cat==='recommendations'){renderRecommendations();$('#disclaimer').textContent='';return}if(cat==='playdate'){renderPlaydates();$('#disclaimer').textContent='';return}if(cat==='compare'){renderComparison();$('#disclaimer').textContent='';return}if(cat==='outing'){renderPlaces();return}if(cat==='fruit'){renderFruits();return}const arr=filterRecords();if(cat==='preschool'){const reviews=arr.filter(x=>x.sub!=='유치원 가이드');$('#cards').innerHTML=`<div class="preschool-guide"><div class="preschool-heading"><span class="preschool-badge">PRESCHOOL GUIDE</span><h3>🏫 싱가포르 유치원 가이드</h3><p>우리 아이에게 맞는 어린이집을 찾는 첫 단계</p></div><div class="guide-steps"><div><b>Infant Care</b><small>약 2~18개월</small></div><div><b>Playgroup</b><small>약 18개월~2세</small></div><div><b>N1 · N2</b><small>3~4세</small></div><div><b>K1 · K2</b><small>5~6세</small></div></div><p>지점별 교사 구성·언어·식단·대기 기간·입학비를 비교해 보세요.</p><h3>부모들이 남긴 유치원 후기</h3></div>`+reviews.map(cardHTML).join('');return;}$('#cards').innerHTML=arr.length?arr.map(cardHTML).join(''):'<div class="empty">조건에 맞는 정보가 없어요. 필터를 바꿔보세요.</div>';$('#disclaimer').textContent=cat==='medicine'?'의약품의 실제 허가 연령·농도·사용량은 약사 또는 의료진에게 확인해 주세요.':cat==='living'?'신청 조건과 규정은 변경될 수 있으므로 연결된 정부 기관의 최신 안내를 확인해 주세요.':'방문 후기와 제품 사용감은 개인에 따라 다를 수 있습니다.';}
+function renderContent(){const cat=state.category;$('#prepPanel').classList.toggle('hide',cat!=='prep');$('#benefitPanel').classList.toggle('hide',cat!=='benefit');$('#recPanel').classList.toggle('hide',cat!=='recommendations');$('#playdatePanel').classList.toggle('hide',cat!=='playdate');$('#comparePanel').classList.toggle('hide',cat!=='compare');$('#outings').classList.toggle('hide',cat!=='outing');$('#fruits').classList.toggle('hide',cat!=='fruit');$('#cards').classList.toggle('hide',['outing','fruit','prep','benefit','recommendations','playdate','compare'].includes(cat));$('#toolbar').classList.toggle('hide',['prep','benefit','fruit','recommendations','playdate','compare'].includes(cat));if(cat==='prep'){renderPrep();$('#disclaimer').textContent='';return}if(cat==='benefit'){renderBenefit();$('#disclaimer').textContent='';return}if(cat==='recommendations'){renderRecommendations();$('#disclaimer').textContent='';return}if(cat==='playdate'){renderPlaydates();$('#disclaimer').textContent='';return}if(cat==='compare'){renderComparison();$('#disclaimer').textContent='';return}if(cat==='outing'){renderPlaces();return}if(cat==='fruit'){renderFruits();return}const arr=filterRecords();if(cat==='preschool'){const reviews=arr.filter(x=>x.sub!=='유치원 가이드');$('#cards').innerHTML=`<div class="preschool-guide"><div class="preschool-heading"><span class="preschool-badge">PRESCHOOL GUIDE</span><h3>🏫 싱가포르 유치원 가이드</h3><p>우리 아이에게 맞는 어린이집을 찾는 첫 단계</p></div><div class="guide-steps"><div><b>Infant Care</b><small>약 2~18개월</small></div><div><b>Playgroup</b><small>약 18개월~2세</small></div><div><b>N1 · N2</b><small>3~4세</small></div><div><b>K1 · K2</b><small>5~6세</small></div></div><p>지점별 교사 구성·언어·식단·대기 기간·입학비를 비교해 보세요.</p><h3>부모들이 남긴 유치원 후기</h3></div>`+reviews.map(cardHTML).join('')+addListingTile(cat);return;}$('#cards').innerHTML=(arr.length?arr.map(cardHTML).join(''):'<div class="empty">조건에 맞는 정보가 없어요. 필터를 바꿔보세요.</div>')+addListingTile(cat);$('#disclaimer').textContent=cat==='medicine'?'의약품의 실제 허가 연령·농도·사용량은 약사 또는 의료진에게 확인해 주세요.':cat==='living'?'신청 조건과 규정은 변경될 수 있으므로 연결된 정부 기관의 최신 안내를 확인해 주세요.':'방문 후기와 제품 사용감은 개인에 따라 다를 수 있습니다.';}
 function oldRenderFruits(){const max={'all':90,'parents':90,'0-6m':5,'6-12m':11,'12-24m':23,'24m+':90}[state.age];const arr=DATA.fruit.filter(x=>x.minAge<=max&&(x.title+x.text+x.fruit.join(' ')).toLowerCase().includes(state.search.toLowerCase()));$('#fruits').innerHTML=arr.map(x=>`<div class="fruit"><h3>${e(x.title)}</h3><div class="icons">${x.fruit.map(f=>`<span title="${e(f)}">${e(f.split(' ')[0])}</span>`).join('')}</div><p>${e(x.fruit.map(f=>f.split(' ').slice(1).join(' ')).join(' · '))}</p><p>${e(x.text)}</p></div>`).join('')||'<div class="empty">해당 월령의 과일 정보가 없어요.</div>';$('#disclaimer').textContent='특정 과일별로 절대적인 시작 월령이 정해져 있지는 않습니다. 이유식 준비 상태와 질식 위험에 맞춰 제공하세요.';}
 
 function renderPlaces(){
  const entries=filterRecords();
  let mapped=0;
- $('#locations').innerHTML=entries.map(x=>locationHTML(x,x.lat!=null&&x.lng!=null?++mapped:null)).join('')||'<div class="empty">선택하신 조건에 맞는 장소가 없습니다. 지역이나 월령을 바꿔보세요.</div>';
+ $('#locations').innerHTML=(entries.map(x=>locationHTML(x,x.lat!=null&&x.lng!=null?++mapped:null)).join('')||'<div class="empty">선택하신 조건에 맞는 장소가 없습니다. 지역이나 월령을 바꿔보세요.</div>')+addListingTile('outing');
  const zone=state.region;
  const selectMonth=$('#outingMonth');if(selectMonth){
   selectMonth.value=state.outingMonth===null?'all':String(state.outingMonth);
