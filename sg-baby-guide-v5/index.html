@@ -105,6 +105,35 @@ a{color:var(--sage);text-decoration:none}.hide{display:none!important}
 .age-badge{display:inline-flex;align-items:center;gap:4px;border-radius:9px;background:#e4f2e6;border:1px solid #d1e6d6;color:#406d4d;font-size:12px;font-weight:800;padding:5px 8px;margin:6px 0}
 .age-badge.bad{background:#f6eee9;border-color:#f0e1d8;color:#946450}
 @media(max-width:650px){.outing-ages{padding:13px}.age-quick button{padding:7px 10px}.age-control{width:100%;justify-content:space-between}.age-control select{flex:1}}
+
+/* Distinctive, content-safe landing hero — no text-overlapping pseudo overlays */
+.homeLanding .hero{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(245px,.8fr);align-items:center;gap:24px;min-height:296px;padding:38px 50px;background:#edf5ef;border:1px solid #ddebe0;border-radius:26px;overflow:hidden;box-shadow:0 15px 42px rgba(54,92,67,.045)}
+.homeLanding .hero::before,.homeLanding .hero::after{display:none!important;content:none!important;background:none!important}
+.homeLanding .hero-copy{position:relative;z-index:1;min-width:0}
+.homeLanding .hero .eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:11px;letter-spacing:.12em;font-weight:800;color:#5b7c67;padding:8px 12px;background:#fff;border:1px solid #dfebe1;border-radius:999px}
+.homeLanding .eyebrow-dot{width:7px;height:7px;flex:none;border-radius:50%;background:#86b193}
+.homeLanding .hero h1{position:relative;z-index:1;margin:17px 0 13px;font-size:clamp(37px,4.8vw,60px);line-height:1.17;letter-spacing:-.072em;color:#294e3b;font-weight:850}
+.homeLanding .hero p{position:relative;z-index:1;font-size:15px;line-height:1.76;color:#627c6c;max-width:600px}
+.homeLanding .hero-tagline{margin-top:19px;display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:#5b8068}
+.homeLanding .hero-tagline span{font-size:16px}
+.homeLanding .hero-art{display:grid;place-items:center;width:100%;justify-self:end;align-self:center;max-width:350px;isolation:isolate}
+.homeLanding .hero-art svg{display:block;width:100%;height:auto;overflow:visible}
+.homeLanding .hero-mobile-break{display:none}
+@media(max-width:760px){
+ .homeLanding .hero{grid-template-columns:minmax(0,1fr) 150px;gap:6px;min-height:0;padding:27px 24px}
+ .homeLanding .hero h1{font-size:clamp(31px,5.3vw,43px);letter-spacing:-.055em}
+ .homeLanding .hero-art{max-width:150px}
+ .homeLanding .hero p{font-size:13px}
+ .homeLanding .hero-desktop-break{display:none}
+ .homeLanding .hero-tagline{margin-top:12px}
+}
+@media(max-width:520px){
+ .homeLanding .hero{grid-template-columns:minmax(0,1fr);gap:10px;padding:27px 24px 20px}
+ .homeLanding .hero h1{font-size:39px}
+ .homeLanding .hero-mobile-break{display:none}
+ .homeLanding .hero-art{max-width:185px;justify-self:end;margin:-2px 0 -25px;opacity:.85}
+ .homeLanding .hero .eyebrow{font-size:10px}
+}
 </style>
 </head>
 <body>
@@ -112,7 +141,54 @@ a{color:var(--sage);text-decoration:none}.hide{display:none!important}
 <div class="topbar"><div class="topbar-inner"><a class="site-logo" href="/" id="brandHome"><span>✳</span> 싱가포르 육아백과</a><span class="topnote">우리 가족의 싱가포르 육아 가이드</span><button id="topHome" class="home-link">카테고리 전체</button></div></div>
 <main class="wrap">
 <section id="homeLanding" class="homeLanding">
- <div class="hero"><div class="eyebrow">THE LITTLE GUIDE · SINGAPORE</div><h1>싱가포르 육아백과</h1><p>아이와 함께하는 싱가포르 생활, 궁금한 정보를 쉽고 간결하게 찾아보세요.</p></div>
+ <div class="hero">
+  <div class="hero-copy">
+    <div class="eyebrow"><span class="eyebrow-dot"></span> OUR LITTLE SINGAPORE</div>
+    <h1>싱가포르<br class="hero-mobile-break"> 육아백과</h1>
+    <p>장보기부터 병원, 교육, 아이와의 나들이까지.<br class="hero-desktop-break"> 우리 가족에게 필요한 정보만 골라보세요.</p>
+    <div class="hero-tagline"><span>🌿</span> 아이와 함께하는 싱가포르 생활</div>
+  </div>
+  <div class="hero-art" aria-hidden="true">
+    <svg viewBox="0 0 360 246" xmlns="http://www.w3.org/2000/svg" focusable="false">
+      <ellipse cx="181" cy="217" rx="154" ry="17" fill="#c8ddd0" opacity=".65"/>
+      <circle cx="182" cy="114" r="102" fill="#e0eee8"/>
+      <circle cx="267" cy="45" r="15" fill="#fbf4da"/>
+      <path d="M67 194c43-18 78-18 110-4 44 19 80 12 124-2" fill="none" stroke="#a8cfc2" stroke-width="10" stroke-linecap="round" opacity=".65"/>
+      <g fill="#94b7a8" stroke="#779b88" stroke-width="2.5">
+        <rect x="106" y="105" width="42" height="91" rx="7"/>
+        <rect x="160" y="101" width="42" height="95" rx="7"/>
+        <rect x="214" y="107" width="42" height="89" rx="7"/>
+      </g>
+      <g fill="#d9ece4">
+        <rect x="117" y="119" width="8" height="13" rx="3"/><rect x="129" y="119" width="8" height="13" rx="3"/>
+        <rect x="172" y="117" width="8" height="13" rx="3"/><rect x="184" y="117" width="8" height="13" rx="3"/>
+        <rect x="225" y="119" width="8" height="13" rx="3"/><rect x="237" y="119" width="8" height="13" rx="3"/>
+        <rect x="117" y="144" width="8" height="13" rx="3"/><rect x="129" y="144" width="8" height="13" rx="3"/>
+        <rect x="172" y="142" width="8" height="13" rx="3"/><rect x="184" y="142" width="8" height="13" rx="3"/>
+        <rect x="225" y="144" width="8" height="13" rx="3"/><rect x="237" y="144" width="8" height="13" rx="3"/>
+      </g>
+      <path d="M91 100c18-7 44-10 84-10h55c18 0 37 2 46 9l-8 13H101z" fill="#547e6b"/>
+      <rect x="92" y="96" width="181" height="10" rx="5" fill="#547e6b"/>
+      <g stroke="#6a9d84" stroke-width="5" stroke-linecap="round" fill="none">
+        <path d="M67 200V143M54 172l13-29 15 27M50 161l17-18 23 13"/>
+        <path d="M295 202v-52m-15 29 15-29 17 27m-27-27 10 0 20 10"/>
+      </g>
+      <g fill="#8cba9c">
+        <ellipse cx="63" cy="141" rx="21" ry="10" transform="rotate(-24 63 141)"/>
+        <ellipse cx="76" cy="139" rx="20" ry="9" transform="rotate(26 76 139)"/>
+        <ellipse cx="292" cy="149" rx="22" ry="10" transform="rotate(-18 292 149)"/>
+        <ellipse cx="303" cy="148" rx="20" ry="10" transform="rotate(24 303 148)"/>
+      </g>
+      <g fill="#f3ddc6">
+        <circle cx="87" cy="66" r="4"/><circle cx="292" cy="90" r="5"/><circle cx="50" cy="105" r="3.5"/>
+      </g>
+      <path d="M74 61l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z" fill="#efd6b3"/>
+      <g fill="none" stroke="#bdd8c8" stroke-width="3" stroke-linecap="round">
+        <path d="M126 210c9 4 18 4 26 0M205 210c10 4 19 4 27 0M261 215c8 3 14 3 20 0"/>
+      </g>
+    </svg>
+  </div>
+</div>
  <div class="home-heading"><h2>카테고리 둘러보기</h2><p>필요한 주제를 선택해 주세요</p></div>
  <div id="categories" class="categories"></div>
 </section>
