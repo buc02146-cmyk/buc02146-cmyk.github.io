@@ -7,6 +7,7 @@ async function prepare(db){
   await db.prepare("CREATE TABLE IF NOT EXISTS recommendations (id TEXT PRIMARY KEY, category TEXT NOT NULL, title TEXT NOT NULL, url TEXT, reason TEXT NOT NULL, created_at TEXT NOT NULL, approved INTEGER NOT NULL DEFAULT 1, nickname TEXT NOT NULL DEFAULT '익명')").run();
   await db.prepare("CREATE TABLE IF NOT EXISTS product_reviews (id TEXT PRIMARY KEY, category TEXT NOT NULL, product_title TEXT NOT NULL, nickname TEXT NOT NULL DEFAULT '익명', body TEXT NOT NULL, sentiment TEXT NOT NULL DEFAULT 'good', created_at TEXT NOT NULL, approved INTEGER NOT NULL DEFAULT 1)").run();
   await db.prepare("CREATE TABLE IF NOT EXISTS playdates (id TEXT PRIMARY KEY, nickname TEXT NOT NULL, place TEXT NOT NULL, starts_at TEXT NOT NULL, min_month INTEGER NOT NULL, max_month INTEGER NOT NULL, capacity INTEGER NOT NULL, details TEXT NOT NULL, notes TEXT NOT NULL DEFAULT '', region TEXT NOT NULL DEFAULT 'Central', created_at TEXT NOT NULL, approved INTEGER NOT NULL DEFAULT 1)").run();
+  await db.prepare("CREATE TABLE IF NOT EXISTS playdate_participants (playdate_id TEXT NOT NULL, nickname TEXT NOT NULL, joined_at TEXT NOT NULL, PRIMARY KEY(playdate_id,nickname))").run();
   const photoColumns=await db.prepare("PRAGMA table_info(product_reviews)").all();
   if(!(photoColumns.results||[]).some(c=>c.name==="photo_data")){
     try{await db.prepare("ALTER TABLE product_reviews ADD COLUMN photo_data TEXT").run()}
@@ -27,11 +28,12 @@ export default {async fetch(req,env){
   const visitorPath=url.pathname==="/api/visitors/today";
   const playdatePath=url.pathname==="/api/playdates";
   const playdateDelete=url.pathname.match(/^\/api\/playdates\/([0-9a-fA-F-]{36})$/);
+  const playdateJoin=url.pathname.match(/^\/api\/playdates\/([0-9a-fA-F-]{36})\/join$/);
   const summaryPath=url.pathname==="/api/review-summary";
   const recentPath=url.pathname==="/api/recent-reviews";
   const searchPath=url.pathname==="/api/search";
   const photoGet=url.pathname.match(/^\/api\/review-photos\/([0-9a-fA-F-]{36})$/);
-  if(!deleteMatch&&!productDelete&&!productPath&&!visitorPath&&!playdatePath&&!playdateDelete&&!summaryPath&&!recentPath&&!searchPath&&!photoGet&&url.pathname!=="/api/recommendations"&&!isHealth)return env.ASSETS.fetch(req);
+  if(!deleteMatch&&!productDelete&&!productPath&&!visitorPath&&!playdatePath&&!playdateDelete&&!playdateJoin&&!summaryPath&&!recentPath&&!searchPath&&!photoGet&&url.pathname!=="/api/recommendations"&&!isHealth)return env.ASSETS.fetch(req);
   if((deleteMatch||productDelete||playdateDelete)&&req.method!=="DELETE")return reply({error:"허용되지 않은 요청입니다."},405);
   if(deleteMatch||productDelete||playdateDelete){
     if(!env.ADMIN_DELETE_SECRET||env.ADMIN_DELETE_SECRET.length<8)return reply({error:"관리자 삭제 비밀번호가 설정되지 않았습니다."},503);
@@ -73,14 +75,39 @@ export default {async fetch(req,env){
     }
 
 
+    if(playdateJoin){
+      if(req.method!=="POST")return reply({error:"허용되지 않은 요청입니다."},405);
+      if(req.headers.get("origin")&&req.headers.get("origin")!==url.origin)return reply({error:"허용되지 않은 출처입니다."},403);
+      if(!(req.headers.get("content-type")||"").startsWith("application/json"))return reply({error:"닉네임을 입력해 주세요."},415);
+      const raw=await req.text();if(raw.length>500)return reply({error:"입력이 너무 깁니다."},413);
+      let data;try{data=JSON.parse(raw)}catch{return reply({error:"형식이 올바르지 않습니다."},400)}
+      const nickname=norm(data.nickname,24).replace(/\s+/g," ");
+      if(nickname.length<2||/[<>\u0000-\u001f]/.test(nickname))return reply({error:"닉네임을 2~24자로 입력해 주세요."},400);
+      const id=playdateJoin[1],localNow=new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Singapore",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date()).replace(" ","T");
+      const insert=await env.DB.prepare("INSERT OR IGNORE INTO playdate_participants(playdate_id,nickname,joined_at) SELECT p.id,?,? FROM playdates p WHERE p.id=? AND p.approved=1 AND p.starts_at>? AND LOWER(p.nickname)<>LOWER(?) AND (SELECT COUNT(*) FROM playdate_participants pp WHERE pp.playdate_id=p.id) < p.capacity-1 AND NOT EXISTS(SELECT 1 FROM playdate_participants pp WHERE pp.playdate_id=p.id AND LOWER(pp.nickname)=LOWER(?))").bind(nickname,new Date().toISOString(),id,localNow,nickname,nickname).run();
+      if((insert.meta?.changes||0)===0){
+        const meeting=await env.DB.prepare("SELECT nickname,capacity,starts_at FROM playdates WHERE id=? AND approved=1").bind(id).first();
+        if(!meeting)return reply({error:"모집글을 찾을 수 없습니다."},404);
+        if(meeting.starts_at<=localNow)return reply({error:"이미 시작했거나 지난 모임입니다."},409);
+        if(meeting.nickname.toLowerCase()===nickname.toLowerCase())return reply({error:"모임 작성자는 이미 참여 인원에 포함됩니다."},409);
+        const match=await env.DB.prepare("SELECT nickname FROM playdate_participants WHERE playdate_id=? AND LOWER(nickname)=LOWER(?)").bind(id,nickname).first();
+        if(match)return reply({error:"이미 신청한 닉네임입니다."},409);
+        return reply({error:"모집이 마감되었습니다."},409);
+      }
+      return reply({ok:true,message:"참여 신청이 등록되었습니다."},201);
+    }
     if(playdateDelete){
+      await env.DB.prepare("DELETE FROM playdate_participants WHERE playdate_id=?").bind(playdateDelete[1]).run();
       const result=await env.DB.prepare("DELETE FROM playdates WHERE id=?").bind(playdateDelete[1]).run();
       return (result.meta?.changes||0)>0?reply({ok:true}):reply({error:"삭제할 모임이 없습니다."},404);
     }
     if(playdatePath){
       if(req.method==="GET"){
         const rows=await env.DB.prepare("SELECT id,nickname,place,starts_at,min_month,max_month,capacity,details,notes,region,created_at FROM playdates WHERE approved=1 ORDER BY starts_at ASC LIMIT 120").all();
-        return reply({items:rows.results||[]});
+        const participants=await env.DB.prepare("SELECT playdate_id,nickname FROM playdate_participants ORDER BY joined_at ASC LIMIT 3000").all();
+        const byId=new Map();
+        for(const p of participants.results||[]){if(!byId.has(p.playdate_id))byId.set(p.playdate_id,[]);byId.get(p.playdate_id).push(p.nickname)}
+        return reply({items:(rows.results||[]).map(p=>({...p,participants:(byId.get(p.id)||[]).slice(0,Math.max(0,p.capacity-1)),joined_count:1+(byId.get(p.id)||[]).length}))});
       }
       if(req.method!=="POST")return reply({error:"허용되지 않은 요청입니다."},405);
       if(!(req.headers.get("content-type")||"").startsWith("application/json"))return reply({error:"입력 형식을 확인해 주세요."},415);
