@@ -32,10 +32,10 @@ function renderWork() {
     return button;
   }));
   $('#projects').replaceChildren(...projects.filter(project => category==='all' || project.tags.includes(category)).map(project => {
-    const image = project.images?.[0];
-    const button = node('button',{class:'project '+(image ? project.id==='reuse'?'feature':'secondary' : 'record'),'aria-haspopup':'dialog'});
+    const image = project.cover;
+    const button = node('button',{class:'project '+'illustrated','aria-haspopup':'dialog'});
     button.onclick = () => openProject(project);
-    if (image) button.append(node('img',{src:asset(image[0]),alt:image[language+1],loading:'lazy',decoding:'async'}));
+    if (image) button.append(node('img',{src:asset(image),alt:'',loading:'lazy',decoding:'async'}));
     const label = node('span',{class:'project-line'});
     label.append(node('span',{},project.title[language]),node('small',{},project.type[language]));
     button.append(label);
@@ -43,11 +43,16 @@ function renderWork() {
   }));
 }
 function renderTimeline() {
-  $('#timeline').replaceChildren(...timeline.map(([date, english, korean]) => {
-    const item = node('li');
-    item.append(node('time',{},date),document.createTextNode(local(english,korean)));
-    return item;
-  }));
+  for (const [id, entries] of [
+    ['professional-timeline', professionalTimeline], ['personal-timeline', personalTimeline]
+  ]) {
+    $('#'+id).replaceChildren(...entries.map(([date, english, korean, detailEn, detailKo]) => {
+      const item = node('li');
+      item.append(node('span',{class:'track-year'},date),node('strong',{},local(english,korean)),
+        node('span',{class:'track-context'},local(detailEn,detailKo)));
+      return item;
+    }));
+  }
 }
 function showChampion(index, animate) {
   selected = index;
@@ -91,7 +96,12 @@ function openProject(project) {
   currentProject = project;
   const wrapper = $('#detail-body');
   wrapper.replaceChildren(node('p',{class:'eyebrow'},project.type[language]),node('h3',{id:'detail-title'},project.title[language]),node('p',{},project.description[language]));
+  if (project.role) wrapper.append(node('p',{class:'project-role'},project.role[language]));
+  if (['hanam','ansan','yangjeong','goyang','barun'].includes(project.id)) {
+    wrapper.append(node('p',{class:'eyebrow'},local('Team project · Kangnam Architects & Planners','팀 프로젝트 · 강남종합건축사사무소')));
+  }
   if (project.images) {
+    wrapper.append(node('h4',{},local('Portfolio boards','포트폴리오 보드')));
     const grid = node('div',{class:'detail-media'});
     project.images.forEach(([file,english,korean],index) => {
       const button = node('button',{'aria-haspopup':'dialog'});
@@ -104,8 +114,6 @@ function openProject(project) {
       grid.append(button);
     });
     wrapper.append(grid);
-  } else if (project.id !== 'other') {
-    wrapper.append(node('p',{},local('Team project · Kangnam Architects & Planners','팀 프로젝트 · 강남종합건축사사무소')));
   }
   detail.showModal();
   detail.scrollTop = 0;
@@ -121,6 +129,7 @@ function showImage(index) {
   $('#zoom').setAttribute('aria-pressed','false');
   imageView.scrollTo(0,0);
 }
+$('#feature-project').onclick = () => openProject(projects.find(project => project.id==='ansan'));
 $('#close').onclick = () => detail.close();
 $('#exit-gallery').onclick = () => lightbox.close();
 $('#prev').onclick = () => showImage(imageIndex-1);
@@ -211,9 +220,15 @@ function scrollState() {
     if (link.hash === '#'+active?.id) link.setAttribute('aria-current','location');
     else link.removeAttribute('aria-current');
   });
-  const rect = $('#timeline').getBoundingClientRect();
-  const line = Math.min(1,Math.max(0,(innerHeight*.83-rect.top)/rect.height));
-  $('#timeline').style.setProperty('--line',reduced.matches?1:line);
+  for (const track of $$('.track')) {
+    const rect = track.getBoundingClientRect();
+    const line = Math.min(1,Math.max(0,(innerHeight*.88-rect.top)/Math.max(130,rect.height)));
+    track.style.setProperty('--line',reduced.matches?1:line);
+  }
+  const feature = $('.feature-frame');
+  const rect = feature.getBoundingClientRect();
+  const displacement = Math.max(-36, Math.min(36,(innerHeight*.5-rect.top-rect.height*.5)*.13));
+  feature.style.setProperty('--parallax',reduced.matches?'0px':displacement+'px');
 }
 let scrollFrame;
 addEventListener('scroll',() => {
@@ -240,7 +255,7 @@ const reveals = new IntersectionObserver(entries => {
     reveals.unobserve(entry.target);
   }
 },{threshold:.22});
-$$('.stats,.movement-panel').forEach(element => reveals.observe(element));
+$$('.stats,.movement-panel,.architecture-feature,.track').forEach(element => reveals.observe(element));
 
 const canvas = $('#wire');
 const ctx = canvas.getContext('2d');
