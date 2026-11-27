@@ -21,7 +21,7 @@
 <meta name="twitter:title" content="싱가포르 육아백과">
 <meta name="twitter:description" content="아이와 함께하는 싱가포르 생활을 위한 육아 정보와 추천">
 <meta name="twitter:image" content="https://sg-baby-guide.pages.dev/og-preview.jpg">
-<meta name="theme-color" content="#edf5ef">
+<meta name="theme-color" content="#f3e9fc"><meta name="color-scheme" content="light dark">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
 <style>
@@ -603,6 +603,114 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
  .preschool-guide>p,.preschool-guide>h3:last-of-type{margin:0 17px 15px;padding:0}
  .home-playdate .home-playdate-grid{grid-template-columns:1fr}
 }
+
+/* New mobile-first hero, grid, playful stickers and robust dark mode */
+.homeLanding .hero{padding-bottom:40px!important}
+.homeLanding .hero-copy{align-self:center}
+.homeLanding .hero-art-interactive{margin:15px 0 8px!important;max-width:430px!important;padding-bottom:21px!important;overflow:visible}
+.homeLanding .hero-art-interactive::after{content:'TAP TO TALK ✦'!important;right:10px!important;bottom:-1px!important;color:#8154b6!important;font-size:10px!important;letter-spacing:.12em}
+.homeLanding .pixel-hero-scene{image-rendering:auto!important;width:100%!important;height:auto!important;aspect-ratio:3/2;object-fit:contain;transform-origin:50% 78%;display:block;filter:drop-shadow(0 10px 15px rgba(73,33,108,.12))}
+.homeLanding .hero-speech{z-index:5;right:3%;top:-9%;padding:12px 18px;border-radius:19px 19px 6px 19px;box-shadow:0 9px 24px rgba(85,45,128,.13);background:#fff!important;color:#64429a!important;border-color:#e4d5f1!important}
+.homeLanding .hero-talker{position:absolute;top:15px;left:8px;background:#f5ecff;border:1px solid #e4d2f6;border-radius:999px;color:#7a5aa6;padding:5px 9px;font-size:10px;font-weight:800;pointer-events:none;z-index:4;opacity:0;transition:opacity .2s}
+.homeLanding .hero-art-interactive.is-bouncing .hero-talker{opacity:1}
+.homeLanding .hero-speech.is-visible{opacity:1}
+.homeLanding .hero-speech::after{background:#fff!important;border-color:#e4d5f1!important}
+.home-playdate .eyebrow,.home-playdate .home-playdate-head .eyebrow{color:#8154bd!important;background:rgba(255,255,255,.6)!important;border:1px solid #e7d2f2!important;padding:6px 11px!important;border-radius:999px!important;letter-spacing:.13em!important;font-size:10px!important}
+.categories{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:14px!important}
+.categories .category:first-child{grid-column:auto!important;min-height:160px!important}
+.categories .category:first-child b{font-size:16px!important}
+.quick-recommend{position:relative;margin:17px 0 21px;padding:23px 27px;background:linear-gradient(112deg,#fff0f2 0%,#f7eafb 73%,#f4e8ff);border:1px solid #ead7ed;border-radius:24px;box-shadow:0 10px 22px #6c489710;display:flex;align-items:center;justify-content:space-between;gap:18px;overflow:hidden}
+.quick-recommend .quick-recommend-deco{position:absolute;right:20%;top:-45px;font-size:120px;line-height:1;opacity:.10;color:#b371c9;pointer-events:none}
+.quick-recommend-text{position:relative}
+.quick-recommend-label{display:block;font-size:10px;color:#895cae;letter-spacing:.14em;font-weight:900;margin-bottom:6px}
+.quick-recommend h2{font-size:19px;color:#483066;margin:0 0 5px;line-height:1.3;font-weight:850;letter-spacing:-.06em}
+.quick-recommend p{color:#897594;font-size:12px;margin:0}
+.quick-recommend button{border:0;background:#7b56b8;border-radius:13px;color:#fff;font-size:12px;font-weight:800;padding:12px 18px;white-space:nowrap;box-shadow:0 8px 19px #6b40a51e;position:relative;cursor:pointer}
+.quick-recommend button:hover{background:#62409d;transform:translateY(-2px)}
+.home-heading:before{content:'';height:1px;flex:1;background:linear-gradient(90deg,#e7d8f3,transparent);order:5;opacity:.65}
+.category .cat-art{border:1px solid #ffffffa8;transform:rotate(-5deg);transition:transform .2s}
+.category:hover .cat-art{transform:rotate(5deg) scale(1.08)}
+.category:nth-child(3n+2) .cat-art{transform:rotate(5deg)}
+.home-recent{position:relative}
+.home-recent:before{content:'✳';color:#d7b7ed;font-size:30px;position:absolute;top:0;right:3%;pointer-events:none;opacity:.75}
+@media(max-width:760px){
+ .homeLanding .hero{padding:30px 22px 34px!important}
+ .homeLanding .hero-art-interactive{max-width:240px!important;margin:18px 0 12px!important;padding-bottom:28px!important;justify-self:center!important}
+ .homeLanding .hero-art-interactive::after{bottom:4px!important;right:8px!important}
+ .homeLanding .hero-speech{top:-2%;right:-3%}
+ .homeLanding .hero-talker{top:0;left:0}
+ .quick-recommend{padding:19px;gap:10px}
+ .quick-recommend h2{font-size:16px}
+ .quick-recommend button{padding:11px 12px;font-size:11px}
+}
+@media(max-width:650px){
+ .categories{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:11px!important}
+ .categories .category:first-child{grid-column:auto!important;min-height:146px!important}
+ .categories .category:first-child b{font-size:14px!important}
+ .categories .category{min-height:146px!important}
+ .quick-recommend{flex-wrap:wrap;padding:19px}
+ .quick-recommend button{width:100%;margin-top:3px}
+}
+@media(max-width:430px){
+ .homeLanding .hero{grid-template-columns:1fr!important;overflow:visible!important;padding-bottom:35px!important}
+ .homeLanding .hero-art-interactive{max-width:min(100%,300px)!important;margin:10px auto 5px!important;justify-self:center!important}
+ .homeLanding .hero-art-interactive::after{bottom:-5px!important}
+ .homeLanding .hero-speech{top:-6px;right:0;font-size:11px!important;padding:9px 12px}
+ .homeLanding .hero-talker{left:0}
+}
+/* Dark mode: automatic system preference. Overlay previous light CSS where necessary. */
+@media(prefers-color-scheme:dark){
+ :root{color-scheme:dark;--canvas:#16131f;--white:#221c30;--ink:#f0e8ff;--body:#d1c4e0;--muted:#afa0c2;--line:#44354f;--sage:#b99aec;--sageSoft:#30253f;--shadow:0 12px 32px #00000029;--accent:#b894f1;--accentDark:#d2b8fb;--accentSoft:#322345}
+ html,body{background:#16131f!important;color:#eee6fc!important}
+ .topbar{background:#211a2c!important;border-color:#493958!important;box-shadow:0 6px 25px #0003}
+ .site-logo{color:#f0e6ff!important}.site-logo span{background:#3b2850!important;color:#e9c9ff!important}
+ .topnote{color:#c1b1d1!important}
+ .header-actions .visitor-count{background:#352747!important;color:#e1ccf9!important;border-color:#634d7b!important}
+ .header-actions .visitor-count strong{color:#f4e6ff!important}
+ .home-link{background:#352843!important;color:#ead9ff!important;border:1px solid #5c4770!important}
+ .homeLanding .hero{background:linear-gradient(120deg,#30213d,#3d2748 58%,#382435)!important;border-color:#655078!important;box-shadow:0 19px 45px #0004}
+ .homeLanding .hero h1{color:#f4eaff!important}
+ .homeLanding .hero p{color:#ddcdea!important}
+ .homeLanding .hero .eyebrow{background:#3c2a4e!important;color:#dbbaf7!important;border-color:#6d507d!important}
+ .homeLanding .hero-speech,.homeLanding .hero-speech::after{background:#372845!important;color:#f7eaff!important;border-color:#684c7d!important}
+ .homeLanding .hero-talker{background:#3f2c51;color:#e3c4fb;border-color:#694c81}
+ .homeLanding .hero-art-interactive::after{color:#e1b8fd!important}
+ .home-search,.home-playdate,.quick-recommend{background:#251e31!important;border-color:#4e3a61!important;box-shadow:0 11px 30px #0003}
+ .home-search label,.home-heading h2,.home-playdate h2,.quick-recommend h2{color:#f3e8ff!important}
+ .home-playdate p,.quick-recommend p,.home-heading p{color:#baa9ca!important}
+ .home-playdate .eyebrow{color:#edd5ff!important;background:#4b3261!important;border-color:#74568b!important}
+ .home-search-row input,.home-search-row button{background:#302639!important;color:#ecdef6!important;border-color:#5c456d!important}
+ input::placeholder,textarea::placeholder{color:#a695b6!important}
+ .global-result,.home-playdate-teaser,.recent-item,.category,.product,.location,.playdate-item,.compare-product,.compare-wrap,.playdate-formbox,.playdate-listbox,.preschool-guide,.rec-formbox,.rec-listbox,.month-main,.month-safety,.fruit-prep-card,.benefit-card,.prep-group,.prep-list,.guide-steps>div{background:#292135!important;border-color:#514060!important;color:#e9dff4!important;box-shadow:0 9px 24px #0002}
+ .categories .category:first-child,.categories .category:nth-child(n){background:#2c233b!important}
+ .category b,.category:first-child b,.product h3,.playdate-item h4,.preschool-guide h3,.recent-item b,.compare-product h4{color:#f1e6ff!important}
+ .category small,.product p,.playdate-item p,.recent-item p,.compare-product p,.location-body .short{color:#c5b5d4!important}
+ .category .cat-art{background:#403052!important}
+ .detail-head h2,.detail-head small,.detail-head p{color:#e8d9f7!important}
+ .group-tabs,.subnav,.toolbar,.outing-ages,.map-shell,.map-heading,.playdate-attendees{background:#2b2238!important;border-color:#514060!important;color:#e9ddf5!important}
+ .group-tab,.subnav button,.toolbar button,.monthbar button,.age-quick button,.map-switch button{background:#352b42!important;color:#ddc8f4!important;border-color:#604a70!important}
+ .group-tab.active,.subnav button.on,.monthbar button.active,.age-quick button.on,.map-switch button.on{background:#855bc2!important;color:white!important}
+ .review,.review-meter,.compare-review,.review-fold,.product-review-widget,.product-review-inner,.product-review-form,.product-review-entry,.location-links a,.review-fold summary,.product-review-widget>summary{background:#35283f!important;color:#e9d6fa!important;border-color:#624a6f!important}
+ .review-meter-empty,.flag{background:#3e3048!important;color:#d9c5e9!important}
+ .product-review-form input,.product-review-form select,.product-review-form textarea,.playdate-form input,.playdate-form select,.playdate-form textarea,.playdate-list-filters select,.rec-formbox input,.rec-formbox select,.rec-formbox textarea,.compare-wrap select,.playdate-join-dialog input{background:#32263d!important;color:#f1e4ff!important;border-color:#634a73!important}
+ .product-review-form label,.playdate-form label,.rec-formbox label,.product-review-privacy,.review-head small,.rec-post-by{color:#c3afd3!important}
+ .playdate-join-dialog{background:#281f35!important;color:#eee2fa!important;border-color:#604576!important}
+ .playdate-join-dialog h3,.playdate-join-dialog form label{color:#f2e5ff!important}
+ .playdate-join-dialog .join-description,.playdate-join-dialog .join-privacy-note{color:#c6b0d8!important}
+ .playdate-join-dialog .join-modal-icon,.playdate-join-dialog .join-modal-actions button:first-child{background:#3b2b50!important;color:#edd6fa!important}
+ .playdate-item .playdate-pills span,.attendee-names .participant-name{background:#433155!important;color:#ead5ff!important;border-color:#655078!important}
+ .preschool-guide .preschool-heading{background:#352640!important;border-color:#59476a!important}
+ .preschool-guide .preschool-heading h3,.preschool-guide .preschool-heading p{color:#f2e2ff!important}
+ .preschool-guide .guide-steps>div,.preschool-guide .guide-steps>div:nth-child(n){background:#3b2e4c!important;border-color:#624e76!important;color:#f2e4ff!important}
+ .preschool-guide .guide-steps b{color:#d5b1ff!important}
+ .preschool-guide .guide-steps small{color:#bdaacf!important}
+ .preschool-guide>p,.preschool-guide>h3:last-of-type{color:#e5d6f2!important}
+ .footer,.disclaimer,.source-note{color:#b6a8c6!important;border-color:#453752!important}
+ .map-shell svg rect:first-child{fill:#282333}
+ .map-region text{fill:#282034!important}
+ .playdate-join-dialog::backdrop{background:rgba(7,3,12,.78)}
+ .kakao-openchat{background:#fee500!important;color:#322700!important}
+}
 </style>
 </head>
 <body>
@@ -614,11 +722,11 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
   <div class="hero-copy">
     <div class="eyebrow"><span class="eyebrow-dot"></span> OUR LITTLE SINGAPORE</div>
     <h1>싱가포르<br class="hero-mobile-break"> 육아백과</h1>
-    <p>장보기부터 병원, 교육, 아이와의 나들이까지.<br class="hero-desktop-break"> 우리 가족에게 필요한 정보만 골라보세요.</p>
-    <div class="hero-tagline"><span>✦</span> 아이와 함께하는 싱가포르 생활</div>
+    <p>장보기, 병원, 교육 정보부터 우리 아이 또래 친구를 만나는 플레이데이트까지.<br class="hero-desktop-break"> 싱가포르 육아에 필요한 이야기를 함께 나눠요.</p>
+    
   </div>
   <div class="hero-art hero-art-interactive" id="heroAnimation" aria-label="소꿉놀이하는 픽셀아트 아기들을 누르면 귀여운 말풍선이 나옵니다." role="button" tabindex="0">
-    <div class="hero-speech" id="heroSpeech" aria-hidden="true">안녕하세요~ 👋</div>
+    <div class="hero-speech" id="heroSpeech" aria-hidden="true">꺄르륵~ 💜</div><span id="heroTalker" class="hero-talker" aria-hidden="true">첫째 아기</span>
     <div class="hero-heart hero-heart-one" aria-hidden="true">♥</div>
     <div class="hero-heart hero-heart-two" aria-hidden="true">♥</div>
     <div class="hero-heart hero-heart-three" aria-hidden="true">♥</div>
@@ -627,8 +735,9 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 </div>
 
  <div class="home-search"><label for="globalSearch">🔎 찾고 싶은 육아 정보가 있나요?</label><div class="home-search-row"><input id="globalSearch" type="search" autocomplete="off" placeholder="제품, 키즈카페, 병원, 후기 검색"><button id="globalSearchClear" type="button" aria-label="검색 지우기">지우기</button></div><div id="globalResults" class="global-results hide"></div></div>
+ <section class="quick-recommend"><div class="quick-recommend-deco" aria-hidden="true">✿</div><div class="quick-recommend-text"><span class="quick-recommend-label">SHARE YOUR FAVORITES</span><h2>추천하고 싶은 장소나 물건이 있나요?</h2><p>우리 가족이 좋아하는 제품, 아이와 가기 좋은 장소를 함께 나눠 주세요.</p></div><button id="quickRecommendOpen" type="button">💌 추천 남기기 <span aria-hidden="true">↗</span></button></section>
  <section class="home-playdate" aria-labelledby="homePlaydateTitle"><div class="home-playdate-head"><div><span class="eyebrow">MEET & PLAY</span><h2 id="homePlaydateTitle">🧸 곧 열리는 플레이데이트</h2><p>가까운 동네에서 우리 아이 또래 친구를 찾아보세요.</p></div><button id="homePlaydateOpen" type="button">모임 모집하기 ↗</button></div><div id="homePlaydateList" class="home-playdate-grid"><p class="muted">모임 정보를 불러오는 중입니다…</p></div></section>
- <div class="home-heading"><h2>카테고리 둘러보기</h2><p>필요한 주제를 선택해 주세요</p></div>
+ <div class="home-heading"><h2>카테고리 둘러보기</h2><p>여덟 가지 주제로 편하게 찾아보세요</p></div>
  <div id="categories" class="categories"></div>
  <section class="home-recent"><div class="home-heading"><h2>💬 새로 올라온 사용 후기</h2><p>직접 경험한 이야기를 확인해 보세요</p></div><div id="homeRecentReviews" class="recent-grid"><p class="muted">최신 후기를 불러오는 중입니다…</p></div></section>
 </section>
@@ -1261,6 +1370,7 @@ function renderComparison(){
 function mountHomeWidgets(){
  setupGlobalSearch();
  const c=document.querySelector('#homePlaydateOpen');if(c)c.onclick=()=>openCategory('playdate');
+ const recommend=document.querySelector('#quickRecommendOpen');if(recommend)recommend.onclick=()=>openCategory('recommendations');
  showPlaydateHome();
  loadHomeRecentReviews();
  refreshReviewSummaries();
@@ -1270,14 +1380,21 @@ function mountHomeWidgets(){
 function initHeroGreeting(){
  const art=document.querySelector('#heroAnimation'),speech=document.querySelector('#heroSpeech');
  if(!art||!speech)return;
- const phrases=['우와, 재밌다~ 💜','우리 엄마 최고~!','또 놀자! 🧸','친구야 안녕~','소꿉놀이 하자! 🍰','오늘도 신나요~ ✨','엄마 사랑해~ 💗'];
+ const phrases=['꺄르륵~!','우와, 재밌다~','우리 엄마 최고~!','이거 내 거야~!','친구야 같이 놀자!','소꿉놀이 맛집이네~','한 판 더! 🧸','히히, 간지러워~','나 오늘 바빠. 노느라!','장난감 회의 중이에요','쉬는 시간? 그게 뭐야?','엄마, 나 천재인가 봐!','까꿍! 찾았다~','뽀뽀 백 번! 💜','아빠도 놀아줘~','간식 타임 언제야?','우유 한 잔 주세요~','삐뽀삐뽀! 출동~','인생 두 번째 봄이야','장난감이 너무 많아~','으쌰으쌰!','우리 집에 놀러 와!','나는야 꼬마 셰프!','하트 뿅뿅~ 💗','엄마 손잡고 가자!','응애? 그거 나 아님!'];
+ const talker=document.querySelector('#heroTalker');
+ const babies=['자동차 놀이 아기','소꿉놀이 아기','찻잔 든 아기','모자 쓴 아기'];
+ let lastBaby=-1;
  const reduceMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true;
  let count=0,clearSpeech=0,clearEffects=0,interval=0;
  const greet=()=>{
   if(document.hidden||!art.isConnected)return;
   art.classList.remove('is-bouncing','show-hearts');
   void art.offsetWidth;
-  speech.textContent=phrases[count%phrases.length];count++;
+  const who=(lastBaby+1+Math.floor(Math.random()*3))%4;lastBaby=who;
+  const phrase=phrases[Math.floor(Math.random()*phrases.length)];
+  speech.textContent=phrase;count++;
+  if(talker){talker.textContent=babies[who];talker.dataset.baby=String(who)}
+  art.dataset.speaker=String(who);
   speech.classList.add('is-visible');
   if(!reduceMotion){
    art.classList.add('is-bouncing');
@@ -1291,8 +1408,8 @@ function initHeroGreeting(){
  art.addEventListener('click',greet);
  art.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();greet();}});
  // One introductory greeting, then gentle occasional animations only while visible.
- window.setTimeout(greet,700);
- if(!reduceMotion)interval=window.setInterval(greet,12000);
+ window.setTimeout(greet,1000);
+ if(!reduceMotion)interval=window.setInterval(greet,12500);
  document.addEventListener('visibilitychange',()=>{if(document.hidden){speech.classList.remove('is-visible');art.classList.remove('is-bouncing','show-hearts');}});
 }
 
