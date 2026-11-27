@@ -926,23 +926,32 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
  #homeLanding .landing-action-card.home-search .home-search-row input{background:#352940!important;color:#fff7ff!important;border-color:#745a8a!important}
  #homeLanding .landing-action-card.home-search .home-search-row button{background:#42304e!important;color:#ecd9ff!important;border-color:#745a8a!important}
 }
-/* Decorative stardust inside the hero. */
+/* Keep the falling sparkles concentrated near the top of the hero. */
 .hero-stardust{position:absolute;inset:0;overflow:hidden;border-radius:inherit;pointer-events:none}
 .hero-stardust span{
- position:absolute;left:var(--start);top:-12px;color:#8c57ba;
- font-size:var(--size,10px);opacity:0;
+ position:absolute;left:var(--start);top:-15px;color:var(--sparkle-lilac);
+ font-size:var(--size,10px);line-height:1;opacity:0;
  animation:hero-stardust-fall var(--duration) var(--delay) linear infinite;
 }
+.hero-stardust{--sparkle-lilac:#ab71cf;--sparkle-pink:#d576a3;--sparkle-gold:#bb872d}
+.hero-stardust span:nth-child(3n+2){color:var(--sparkle-pink)}
+.hero-stardust span:nth-child(3n){color:var(--sparkle-gold)}
 @keyframes hero-stardust-fall{
- 0%{transform:translate(0,0);opacity:0}
- 12%,65%{opacity:.44}
- 100%{transform:translate(var(--drift),var(--hero-fall-distance,330px)) rotate(70deg);opacity:0}
+ 0%{transform:translate(0,0) rotate(-20deg) scale(.65);opacity:0}
+ 12%{opacity:.7}
+ 25%{opacity:.38}
+ 34%{opacity:.65}
+ 58%{opacity:.2}
+ 80%{opacity:.04}
+ 100%{transform:translate(var(--drift),var(--hero-fall-distance,235px)) rotate(85deg) scale(.38);opacity:0}
 }
 @supports (height:1cqh){
  .hero-stardust{container-type:size}
- .hero-stardust span{--hero-fall-distance:calc(100cqh + 12px)}
+ .hero-stardust span{--hero-fall-distance:calc(var(--depth,68) * 1cqh + 15px)}
 }
-@media(prefers-color-scheme:dark){.hero-stardust span{color:#e3bdff}}
+@media(prefers-color-scheme:dark){
+ .hero-stardust{--sparkle-lilac:#e5bdff;--sparkle-pink:#ffa4ce;--sparkle-gold:#ffe5a0}
+}
 @media(prefers-reduced-motion:reduce){.hero-stardust{display:none}.hero-stardust span{animation:none}}
 </style>
 </head>
@@ -953,13 +962,26 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 <section id="homeLanding" class="homeLanding">
  <div class="hero">
   <div class="hero-stardust" aria-hidden="true">
-    <span style="--start:6%;--duration:8s;--delay:-2s;--drift:18px;--size:8px">✦</span>
-    <span style="--start:19%;--duration:11s;--delay:-7s;--drift:-10px">✧</span>
-    <span style="--start:34%;--duration:9s;--delay:-3s;--drift:20px;--size:7px">✦</span>
-    <span style="--start:51%;--duration:10s;--delay:-8s;--drift:-16px">✧</span>
-    <span style="--start:64%;--duration:9s;--delay:-1s;--drift:14px;--size:8px">✦</span>
-    <span style="--start:79%;--duration:11s;--delay:-5s;--drift:-18px;--size:11px">✧</span>
-    <span style="--start:94%;--duration:8s;--delay:-4s;--drift:-19px">✦</span>
+    <span style="--start:3%;--duration:7s;--delay:-1s;--drift:16px;--size:14px;--depth:59">✦</span>
+    <span style="--start:8%;--duration:9s;--delay:-4s;--drift:-9px;--size:7px;--depth:65">•</span>
+    <span style="--start:13%;--duration:8s;--delay:-6s;--drift:11px;--size:12px;--depth:68">✧</span>
+    <span style="--start:18%;--duration:7s;--delay:-2s;--drift:-12px;--size:9px;--depth:56">✦</span>
+    <span style="--start:23%;--duration:10s;--delay:-5s;--drift:16px;--size:10px;--depth:73">✧</span>
+    <span style="--start:28%;--duration:8s;--delay:-1s;--drift:13px;--size:8px;--depth:61">•</span>
+    <span style="--start:33%;--duration:9s;--delay:-7s;--drift:-14px;--size:15px;--depth:68">✦</span>
+    <span style="--start:38%;--duration:7s;--delay:-3s;--drift:13px;--size:9px;--depth:55">✧</span>
+    <span style="--start:43%;--duration:9s;--delay:-2s;--drift:-12px;--size:8px;--depth:63">✦</span>
+    <span style="--start:48%;--duration:8s;--delay:-5s;--drift:18px;--size:11px;--depth:72">✧</span>
+    <span style="--start:53%;--duration:7s;--delay:-1s;--drift:-11px;--size:8px;--depth:58">•</span>
+    <span style="--start:58%;--duration:10s;--delay:-4s;--drift:13px;--size:14px;--depth:69">✦</span>
+    <span style="--start:63%;--duration:8s;--delay:-6s;--drift:12px;--size:8px;--depth:60">✧</span>
+    <span style="--start:68%;--duration:7s;--delay:-2s;--drift:-13px;--size:11px;--depth:65">✦</span>
+    <span style="--start:73%;--duration:9s;--delay:-3s;--drift:16px;--size:8px;--depth:72">•</span>
+    <span style="--start:78%;--duration:8s;--delay:-1s;--drift:-13px;--size:15px;--depth:59">✧</span>
+    <span style="--start:83%;--duration:10s;--delay:-5s;--drift:12px;--size:8px;--depth:70">✦</span>
+    <span style="--start:88%;--duration:7s;--delay:-2s;--drift:-15px;--size:12px;--depth:61">✦</span>
+    <span style="--start:93%;--duration:9s;--delay:-6s;--drift:-18px;--size:7px;--depth:64">•</span>
+    <span style="--start:97%;--duration:7s;--delay:-3s;--drift:-21px;--size:12px;--depth:54">✧</span>
   </div>
   <div class="hero-copy">
     <div class="eyebrow"><span class="eyebrow-dot"></span> OUR LITTLE SINGAPORE</div>
