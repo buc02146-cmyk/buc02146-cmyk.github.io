@@ -1,27 +1,40 @@
-// Cloudflare Pages advanced mode. Bind a D1 database as DB in Cloudflare Pages settings.
-const cats=new Set(["grocery","clinic","medicine","gear","outing","preschool","fruit","living","prep"]);
-const headers={"content-type":"application/json; charset=utf-8","cache-control":"no-store"};
-const json=(v,status=200)=>new Response(JSON.stringify(v),{status,headers});
-const clean=(v,max)=>typeof v==="string"?v.trim().slice(0,max):"";
-export default {async fetch(request,env){
-  const url=new URL(request.url);
-  if(url.pathname!=="/api/recommendations") return env.ASSETS.fetch(request);
-  if(!env.DB) return json({error:"추천 게시판 데이터베이스 연결이 아직 완료되지 않았습니다."},503);
+// Cloudflare Pages advanced worker, with a D1 binding named DB.
+const CATEGORIES=new Set(["grocery","clinic","medicine","gear","outing","preschool","fruit","living","prep"]);
+const H={"content-type":"application/json; charset=utf-8","cache-control":"no-store"};
+const reply=(v,status=200)=>new Response(JSON.stringify(v),{status,headers:H});
+const norm=(v,max)=>typeof v==="string"?v.trim().slice(0,max):"";
+async function prepare(db){
+  await db.prepare("CREATE TABLE IF NOT EXISTS recommendations (id TEXT PRIMARY KEY, category TEXT NOT NULL, title TEXT NOT NULL, url TEXT, reason TEXT NOT NULL, created_at TEXT NOT NULL, approved INTEGER NOT NULL DEFAULT 1, nickname TEXT NOT NULL DEFAULT '익명')").run();
+  const info=await db.prepare("PRAGMA table_info(recommendations)").all();
+  if(!(info.results||[]).some(c=>c.name==="nickname")){
+    try{await db.prepare("ALTER TABLE recommendations ADD COLUMN nickname TEXT NOT NULL DEFAULT '익명'").run()}
+    catch(e){if(!/duplicate column/i.test(String(e)))throw e}
+  }
+}
+export default {async fetch(req,env){
+  const url=new URL(req.url);
+  const isHealth=url.pathname==="/api/status";
+  if(url.pathname!=="/api/recommendations"&&!isHealth)return env.ASSETS.fetch(req);
+  if(!env.DB)return reply(isHealth?{database:"not_connected",note:"Cloudflare Pages에서 DB 바인딩을 저장한 뒤 새 배포를 시작하세요."}:{error:"현재 배포에 DB 연결이 적용되지 않았습니다. Cloudflare Settings → Bindings에서 DB를 저장하고 Deployments에서 새로 배포해 주세요."},503);
   try{
-    if(request.method==="GET"){
-      const rows=await env.DB.prepare("SELECT id,category,title,url,reason,created_at FROM recommendations WHERE approved=1 ORDER BY created_at DESC LIMIT 150").all();
-      return json({items:rows.results||[]});
+    await prepare(env.DB);
+    if(isHealth)return reply({database:"connected",table:"ready"});
+    if(req.method==="GET"){
+      const rows=await env.DB.prepare("SELECT id,category,title,url,reason,created_at,nickname FROM recommendations WHERE approved=1 ORDER BY created_at DESC LIMIT 150").all();
+      return reply({items:rows.results||[]});
     }
-    if(request.method!=="POST") return json({error:"Method not allowed"},405);
-    if((request.headers.get("content-type")||"").split(";")[0]!=="application/json")return json({error:"JSON 형식으로 보내 주세요."},415);
-    const body=await request.text();if(body.length>3500)return json({error:"글이 너무 깁니다."},413);
-    let data;try{data=JSON.parse(body)}catch{return json({error:"입력 형식을 확인해 주세요."},400)}
-    if(data.website)return json({ok:true});
-    const category=clean(data.category,30),title=clean(data.title,90),reason=clean(data.reason,400),link=clean(data.url,600);
-    if(!cats.has(category)||title.length<2||reason.length<8)return json({error:"카테고리·추천 대상·추천 이유를 확인해 주세요."},400);
-    if(link){try{const u=new URL(link);if(u.protocol!=="https:"&&u.protocol!=="http:")throw 1;if(u.username||u.password)throw 1}catch{return json({error:"유효한 웹사이트 링크를 입력해 주세요."},400)}}
+    if(req.method!=="POST")return reply({error:"허용되지 않은 요청입니다."},405);
+    if(!(req.headers.get("content-type")||"").startsWith("application/json"))return reply({error:"JSON 형식으로 입력해 주세요."},415);
+    const body=await req.text();
+    if(body.length>3500)return reply({error:"내용이 너무 깁니다."},413);
+    let d;try{d=JSON.parse(body)}catch{return reply({error:"입력 형식을 확인해 주세요."},400)}
+    if(d.website)return reply({ok:true});
+    const category=norm(d.category,30),title=norm(d.title,90),reason=norm(d.reason,400);
+    const nickname=norm(d.nickname,24)||"익명",link=norm(d.url,600);
+    if(!CATEGORIES.has(category)||title.length<2||reason.length<8||nickname.length<2)return reply({error:"카테고리·닉네임·제목·추천 이유를 확인해 주세요."},400);
+    if(link){try{const u=new URL(link);if(!["https:","http:"].includes(u.protocol)||u.username||u.password)throw Error("URL")}catch{return reply({error:"정확한 웹사이트 링크를 입력해 주세요."},400)}}
     const id=crypto.randomUUID(),created_at=new Date().toISOString();
-    await env.DB.prepare("INSERT INTO recommendations(id,category,title,url,reason,created_at,approved) VALUES(?,?,?,?,?,?,1)").bind(id,category,title,link,reason,created_at).run();
-    return json({ok:true,id},201);
-  }catch(err){return json({error:"게시판에 일시적인 오류가 발생했습니다."},500)}
+    await env.DB.prepare("INSERT INTO recommendations (id,category,title,url,reason,created_at,approved,nickname) VALUES (?,?,?,?,?,?,1,?)").bind(id,category,title,link,reason,created_at,nickname).run();
+    return reply({ok:true,id},201);
+  }catch(err){return reply({error:"데이터베이스 처리 중 오류가 발생했습니다. 배포 및 D1 설정을 확인해 주세요."},500)}
 }};
