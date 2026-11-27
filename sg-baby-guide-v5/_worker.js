@@ -33,6 +33,28 @@ function helpfulCookieHeaders(token,cookieName=helpfulCookieName){
   if(token)headers.append("set-cookie",cookieName+"="+token+"; Max-Age=31536000; Path=/api; HttpOnly; Secure; SameSite=Lax");
   return headers;
 }
+async function authorHash(req){
+  const token=req.headers.get("x-sgbg-author")||"";
+  return helpfulTokenPattern.test(token)?helpfulBrowserHash(token):null;
+}
+async function adminAuthorized(req,env){
+  const supplied=req.headers.get("x-admin-secret")||"";
+  if(!supplied||!env.ADMIN_DELETE_SECRET||env.ADMIN_DELETE_SECRET.length<8)return false;
+  const [expected,actual]=await Promise.all([helpfulBrowserHash(env.ADMIN_DELETE_SECRET),helpfulBrowserHash(supplied)]);
+  let mismatch=0;
+  for(let i=0;i<expected.length;i++)mismatch|=expected.charCodeAt(i)^actual.charCodeAt(i);
+  return mismatch===0;
+}
+function listingPhotoError(photo,consent){
+  if(consent!==true)return reply({error:"사진 공개에 동의해 주세요."},400);
+  if(typeof photo!=="string"||photo.length>230000||!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(photo))
+    return reply({error:"사진은 170KB 이하의 JPEG로 올려 주세요."},413);
+  try{
+    const raw=atob(photo.slice("data:image/jpeg;base64,".length));
+    if(raw.length<=170000&&raw.startsWith("\xff\xd8\xff"))return null;
+  }catch{}
+  return reply({error:"지원하지 않는 사진입니다."},415);
+}
 async function prepare(db){
   await db.prepare("CREATE TABLE IF NOT EXISTS recommendations (id TEXT PRIMARY KEY, category TEXT NOT NULL, title TEXT NOT NULL, url TEXT, reason TEXT NOT NULL, created_at TEXT NOT NULL, approved INTEGER NOT NULL DEFAULT 1, nickname TEXT NOT NULL DEFAULT '익명')").run();
   await db.prepare("CREATE TABLE IF NOT EXISTS product_reviews (id TEXT PRIMARY KEY, category TEXT NOT NULL, product_title TEXT NOT NULL, nickname TEXT NOT NULL DEFAULT '익명', body TEXT NOT NULL, sentiment TEXT NOT NULL DEFAULT 'good', created_at TEXT NOT NULL, approved INTEGER NOT NULL DEFAULT 1)").run();
@@ -47,6 +69,8 @@ async function prepare(db){
   await ensureColumn(db,"recommendations","nickname","TEXT NOT NULL DEFAULT '익명'",info.results||[]);
   await ensureColumn(db,"recommendations","listing_subcategory","TEXT",info.results||[]);
   await ensureColumn(db,"recommendations","listing_region","TEXT",info.results||[]);
+  await ensureColumn(db,"recommendations","author_hash","TEXT",info.results||[]);
+  await ensureColumn(db,"recommendations","photo_data","TEXT",info.results||[]);
 }
 export default {async fetch(req,env){
   const url=new URL(req.url);
@@ -64,17 +88,20 @@ export default {async fetch(req,env){
   const helpfulPath=url.pathname.match(/^\/api\/product-reviews\/([0-9a-fA-F-]{36})\/helpful$/);
   const searchPath=url.pathname==="/api/search";
   const photoGet=url.pathname.match(/^\/api\/review-photos\/([0-9a-fA-F-]{36})$/);
-  if(!deleteMatch&&!productDelete&&!productPath&&!visitorPath&&!playdatePath&&!playdateDelete&&!playdateJoin&&!summaryPath&&!recentPath&&!listingRatingsPath&&!helpfulPath&&!searchPath&&!photoGet&&url.pathname!=="/api/recommendations"&&!isHealth)return env.ASSETS.fetch(req);
-  if((deleteMatch||productDelete||playdateDelete)&&req.method!=="DELETE")return reply({error:"허용되지 않은 요청입니다."},405);
-  if(deleteMatch||productDelete||playdateDelete){
-    if(!env.ADMIN_DELETE_SECRET||env.ADMIN_DELETE_SECRET.length<8)return reply({error:"관리자 삭제 비밀번호가 설정되지 않았습니다."},503);
-    const supplied=req.headers.get("x-admin-secret")||"";
-    const encoder=new TextEncoder();
-    const digest=async x=>new Uint8Array(await crypto.subtle.digest("SHA-256",encoder.encode(x)));
-    const expected=await digest(env.ADMIN_DELETE_SECRET),actual=await digest(supplied);
-    let mismatch=0;for(let i=0;i<expected.length;i++)mismatch|=expected[i]^actual[i];
-    if(mismatch!==0)return reply({error:"관리자 비밀번호가 올바르지 않습니다."},403);
+  const listingPhoto=url.pathname.match(/^\/api\/listing-photos\/([0-9a-fA-F-]{36})$/);
+  const playdateEdit=playdateDelete&&req.method==="PATCH";
+  const recommendationEdit=deleteMatch&&req.method==="PATCH";
+  if(!deleteMatch&&!productDelete&&!productPath&&!visitorPath&&!playdatePath&&!playdateDelete&&!playdateJoin&&!summaryPath&&!recentPath&&!listingRatingsPath&&!helpfulPath&&!searchPath&&!photoGet&&!listingPhoto&&url.pathname!=="/api/recommendations"&&!isHealth)return env.ASSETS.fetch(req);
+  if((deleteMatch||productDelete||playdateDelete)&&req.method!=="DELETE"&&!playdateEdit&&!recommendationEdit)
+    return reply({error:"허용되지 않은 요청입니다."},405);
+  const adminAction=productDelete||(playdateDelete&&!playdateEdit)||
+    ((deleteMatch&&!recommendationEdit||playdateEdit)&&req.headers.has("x-admin-secret"));
+  if(adminAction){
+    if(!env.ADMIN_DELETE_SECRET||env.ADMIN_DELETE_SECRET.length<8)return reply({error:"관리자 비밀번호가 설정되지 않았습니다."},503);
+    if(!await adminAuthorized(req,env))return reply({error:"관리자 비밀번호가 올바르지 않습니다."},403);
   }
+  if((deleteMatch||playdateEdit||playdatePath)&&req.method!=="GET"&&req.headers.get("origin")&&req.headers.get("origin")!==url.origin)
+    return reply({error:"허용되지 않은 출처입니다."},403);
   if(!env.DB)return reply(isHealth?{database:"not_connected",admin_delete_password:(env.ADMIN_DELETE_SECRET&&env.ADMIN_DELETE_SECRET.length>=8)?"configured":"not_configured",note:"Cloudflare Pages에서 DB 바인딩을 저장한 뒤 새 배포를 시작하세요."}:{error:"현재 배포에 DB 연결이 적용되지 않았습니다. Cloudflare Settings → Bindings에서 DB를 저장하고 Deployments에서 새로 배포해 주세요."},503);
   try{
 
@@ -103,9 +130,15 @@ export default {async fetch(req,env){
       await ensureColumn(env.DB,"playdate_participants","child_month","INTEGER",columns.results||[]);
       await ensureColumn(env.DB,"playdate_participants","cancel_token_hash","TEXT",columns.results||[]);
     }
-    if(deleteMatch){
+    const author=await authorHash(req);
+    if(playdatePath||playdateEdit){
+      const columns=await env.DB.prepare("PRAGMA table_info(playdates)").all();
+      await ensureColumn(env.DB,"playdates","author_hash","TEXT",columns.results||[]);
+    }
+    if(deleteMatch&&!recommendationEdit){
       const itemId=deleteMatch[1];
-      const result=await env.DB.prepare("DELETE FROM recommendations WHERE id=?").bind(itemId).run();
+      if(!adminAction&&!author)return reply({error:"작성자만 삭제할 수 있습니다."},403);
+      const result=await env.DB.prepare("DELETE FROM recommendations WHERE id=? AND (?=1 OR author_hash=?)").bind(itemId,adminAction?1:0,author).run();
       if((result.meta?.changes||0)===0)return reply({error:"삭제할 글을 찾을 수 없습니다."},404);
       return reply({ok:true,deleted:itemId});
     }
@@ -147,13 +180,13 @@ export default {async fetch(req,env){
       }
       return reply({ok:true,message:"참여 신청이 등록되었습니다."},201);
     }
-    if(playdateDelete){
+    if(playdateDelete&&!playdateEdit){
       await env.DB.prepare("DELETE FROM playdate_participants WHERE playdate_id=?").bind(playdateDelete[1]).run();
       const result=await env.DB.prepare("DELETE FROM playdates WHERE id=?").bind(playdateDelete[1]).run();
       return (result.meta?.changes||0)>0?reply({ok:true}):reply({error:"삭제할 모임이 없습니다."},404);
     }
-    if(playdatePath){
-      if(req.method!=="GET"&&req.method!=="POST")return reply({error:"허용되지 않은 요청입니다."},405);
+    if(playdatePath||playdateEdit){
+      if(req.method!=="GET"&&req.method!=="POST"&&!playdateEdit)return reply({error:"허용되지 않은 요청입니다."},405);
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS playdate_numbers (number INTEGER PRIMARY KEY AUTOINCREMENT, playdate_id TEXT NOT NULL UNIQUE)").run();
       await env.DB.prepare(`
         INSERT INTO playdate_numbers(playdate_id)
@@ -164,10 +197,11 @@ export default {async fetch(req,env){
       if(req.method==="GET"){
         const rows=await env.DB.prepare(`
           SELECT p.id,p.nickname,p.place,p.starts_at,p.min_month,p.max_month,p.capacity,
-            p.details,p.notes,p.region,p.created_at,n.number AS edition
+            p.details,p.notes,p.region,p.created_at,n.number AS edition,
+            COALESCE(p.author_hash=?,0) AS owned
           FROM playdates p JOIN playdate_numbers n ON n.playdate_id=p.id
           WHERE p.approved=1 ORDER BY p.starts_at ASC LIMIT 120
-        `).all();
+        `).bind(author).all();
         const participants=await env.DB.prepare("SELECT playdate_id,nickname,child_month FROM playdate_participants ORDER BY joined_at ASC LIMIT 3000").all();
         const byId=new Map();
         for(const p of participants.results||[]){
@@ -183,10 +217,11 @@ export default {async fetch(req,env){
       if(!(req.headers.get("content-type")||"").startsWith("application/json"))return reply({error:"입력 형식을 확인해 주세요."},415);
       const raw=await req.text();if(raw.length>4500)return reply({error:"내용이 너무 깁니다."},413);
       let d;try{d=JSON.parse(raw)}catch{return reply({error:"입력 형식이 올바르지 않습니다."},400)}
+      if(!d||typeof d!=="object")return reply({error:"입력 형식을 확인해 주세요."},400);
       if(d.website)return reply({ok:true});
       const nickname=norm(d.nickname,24),place=norm(d.place,110),starts_at=norm(d.starts_at,40),region=norm(d.region,24),
       details=norm(d.details,500),notes=norm(d.notes,450),capacity=Number(d.capacity),min=Number(d.min_month),max=Number(d.max_month);
-      if(nickname.length<2||place.length<2||details.length<4||!["Central","East","West","North","South","Unknown"].includes(region)
+      if((!playdateEdit&&nickname.length<2)||place.length<2||details.length<4||!["Central","East","West","North","South","Unknown"].includes(region)
          ||!Number.isInteger(capacity)||capacity<2||capacity>50||!Number.isInteger(min)||!Number.isInteger(max)||min<0||max>120||min>max)
         return reply({error:"장소·월령·정원·내용을 확인해 주세요."},400);
       if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(starts_at)||!Number.isFinite(Date.parse(starts_at)))
@@ -194,9 +229,23 @@ export default {async fetch(req,env){
       const meetingAt=Date.parse(starts_at+"+08:00");
       if(!Number.isFinite(meetingAt)||meetingAt<Date.now()-3600000||meetingAt>Date.now()+365*86400000)
         return reply({error:"모임은 앞으로 1년 이내 날짜로 등록해 주세요."},400);
+      if(playdateEdit){
+        if(!adminAction&&!author)return reply({error:"작성자만 수정할 수 있습니다."},403);
+        const id=playdateDelete[1];
+        const result=await env.DB.prepare(`
+          UPDATE playdates SET place=?,starts_at=?,min_month=?,max_month=?,capacity=?,details=?,notes=?,region=?
+          WHERE id=? AND approved=1 AND (?=1 OR author_hash=?)
+            AND ?>=(SELECT COUNT(*)+1 FROM playdate_participants WHERE playdate_id=playdates.id)
+        `).bind(place,starts_at,min,max,capacity,details,notes,region,id,adminAction?1:0,author,capacity).run();
+        if(!result.meta?.changes){
+          const permitted=await env.DB.prepare("SELECT id FROM playdates WHERE id=? AND approved=1 AND (?=1 OR author_hash=?)").bind(id,adminAction?1:0,author).first();
+          return permitted?reply({error:"정원은 이미 신청한 인원보다 작게 변경할 수 없습니다."},409):reply({error:"이 모임을 수정할 권한이 없습니다."},403);
+        }
+        return reply({ok:true,id});
+      }
       const id=crypto.randomUUID(),now=new Date().toISOString();
       await env.DB.batch([
-        env.DB.prepare("INSERT INTO playdates(id,nickname,place,starts_at,min_month,max_month,capacity,details,notes,region,created_at,approved) VALUES(?,?,?,?,?,?,?,?,?,?,?,1)").bind(id,nickname,place,starts_at,min,max,capacity,details,notes,region,now),
+        env.DB.prepare("INSERT INTO playdates(id,nickname,place,starts_at,min_month,max_month,capacity,details,notes,region,created_at,approved,author_hash) VALUES(?,?,?,?,?,?,?,?,?,?,?,1,?)").bind(id,nickname,place,starts_at,min,max,capacity,details,notes,region,now,author),
         env.DB.prepare("INSERT INTO playdate_numbers(playdate_id) VALUES(?)").bind(id)
       ]);
       return reply({ok:true,id},201);
@@ -295,6 +344,14 @@ export default {async fetch(req,env){
       if(!review)return reply({error:"후기를 찾을 수 없습니다."},404);
       return reply({helpful_count:review.helpful_count,helped:true});
     }
+    if(listingPhoto){
+      if(req.method!=="GET")return reply({error:"허용되지 않은 요청입니다."},405);
+      const data=await env.DB.prepare("SELECT photo_data FROM recommendations WHERE id=? AND approved=1").bind(listingPhoto[1]).first();
+      const payload=data?.photo_data;
+      if(!payload)return reply({error:"등록된 사진이 없습니다."},404);
+      const bytes=Uint8Array.from(atob(payload.slice("data:image/jpeg;base64,".length)),c=>c.charCodeAt(0));
+      return new Response(bytes,{headers:{"content-type":"image/jpeg","cache-control":"no-store","x-content-type-options":"nosniff"}});
+    }
     if(photoGet){
       if(req.method!=="GET")return reply({error:"허용되지 않은 요청입니다."},405);
       const data=await env.DB.prepare("SELECT photo_data FROM product_reviews WHERE id=? AND approved=1").bind(photoGet[1]).first();
@@ -337,19 +394,27 @@ export default {async fetch(req,env){
       return reply({ok:true,id},201);
     }
     if(isHealth)return reply({database:"connected",table:"ready",admin_delete_password:(env.ADMIN_DELETE_SECRET&&env.ADMIN_DELETE_SECRET.length>=8)?"configured":"not_configured"});
-    if(req.method==="GET"){
+    if(req.method==="GET"&&!deleteMatch){
       const listings=url.searchParams.get("listings")==="1";
+      const columns="id,category,title,url,reason,nickname,created_at,listing_subcategory,listing_region,photo_data IS NOT NULL AS has_photo,COALESCE(author_hash=?,0) AS owned";
       const rows=await env.DB.prepare(listings
-        ?"SELECT id,category,title,url,reason,nickname,listing_subcategory,listing_region FROM recommendations WHERE approved=1 AND listing_subcategory IS NOT NULL ORDER BY created_at DESC"
-        :"SELECT id,category,title,url,reason,created_at,nickname FROM recommendations WHERE approved=1 ORDER BY created_at DESC LIMIT 150").all();
+        ?"SELECT "+columns+" FROM recommendations WHERE approved=1 AND listing_subcategory IS NOT NULL ORDER BY created_at DESC"
+        :"SELECT "+columns+" FROM recommendations WHERE approved=1 ORDER BY created_at DESC LIMIT 150").bind(author).all();
       return reply({items:rows.results||[]});
     }
-    if(req.method!=="POST")return reply({error:"허용되지 않은 요청입니다."},405);
+    if(req.method!=="POST"&&!recommendationEdit)return reply({error:"허용되지 않은 요청입니다."},405);
+    if(recommendationEdit&&!author)return reply({error:"작성자만 수정할 수 있습니다."},403);
+    if(req.headers.get("origin")&&req.headers.get("origin")!==url.origin)return reply({error:"허용되지 않은 출처입니다."},403);
     if(!(req.headers.get("content-type")||"").startsWith("application/json"))return reply({error:"JSON 형식으로 입력해 주세요."},415);
     const body=await req.text();
-    if(body.length>3500)return reply({error:"내용이 너무 깁니다."},413);
+    if(body.length>235000)return reply({error:"내용 또는 사진이 너무 큽니다."},413);
     let d;try{d=JSON.parse(body)}catch{return reply({error:"입력 형식을 확인해 주세요."},400)}
+    if(!d||typeof d!=="object")return reply({error:"입력 형식을 확인해 주세요."},400);
     if(d.website)return reply({ok:true});
+    if(d.photo!==undefined&&d.photo!==null){
+      const error=listingPhotoError(d.photo,d.photo_consent);
+      if(error)return error;
+    }
     const category=norm(d.category,30),title=norm(d.title,90),reason=norm(d.reason,400);
     const nickname=norm(d.nickname,24)||"익명",link=norm(d.url,600);
     const listingSubcategory=norm(d.listing_subcategory,40),listingRegion=norm(d.listing_region,24);
@@ -361,9 +426,21 @@ export default {async fetch(req,env){
     }
     if(!CATEGORIES.has(category)||title.length<2||reason.length<8||nickname.length<2)return reply({error:"카테고리·닉네임·제목·추천 이유를 확인해 주세요."},400);
     if(link){try{const u=new URL(link);if(!["https:","http:"].includes(u.protocol)||u.username||u.password)throw Error("URL")}catch{return reply({error:"정확한 웹사이트 링크를 입력해 주세요."},400)}}
+    const sub=listingSubcategory||null,region=sub&&category==="outing"?listingRegion:null;
+    if(recommendationEdit){
+      const id=deleteMatch[1];
+      const updated=await env.DB.prepare(`
+        UPDATE recommendations SET category=?,title=?,url=?,reason=?,nickname=?,listing_subcategory=?,listing_region=?,
+          photo_data=CASE WHEN ? THEN ? ELSE photo_data END
+        WHERE id=? AND approved=1 AND author_hash=?
+      `).bind(category,title,link,reason,nickname,sub,region,d.photo!==undefined?1:0,d.photo??null,id,author).run();
+      if(!updated.meta?.changes)return reply({error:"이 추천 글을 수정할 권한이 없습니다."},403);
+      const item=await env.DB.prepare("SELECT photo_data IS NOT NULL AS has_photo FROM recommendations WHERE id=?").bind(id).first();
+      return reply({ok:true,id,has_photo:item?.has_photo||0});
+    }
     const id=crypto.randomUUID(),created_at=new Date().toISOString();
-    await env.DB.prepare("INSERT INTO recommendations (id,category,title,url,reason,created_at,approved,nickname,listing_subcategory,listing_region) VALUES (?,?,?,?,?,?,1,?,?,?)")
-      .bind(id,category,title,link,reason,created_at,nickname,listingSubcategory||null,listingSubcategory&&category==="outing"?listingRegion:null).run();
-    return reply({ok:true,id},201);
+    await env.DB.prepare("INSERT INTO recommendations (id,category,title,url,reason,created_at,approved,nickname,listing_subcategory,listing_region,photo_data,author_hash) VALUES (?,?,?,?,?,?,1,?,?,?,?,?)")
+      .bind(id,category,title,link,reason,created_at,nickname,sub,region,d.photo??null,author).run();
+    return reply({ok:true,id,has_photo:d.photo?1:0},201);
   }catch(err){return reply({error:"데이터베이스 처리 중 오류가 발생했습니다. 배포 및 D1 설정을 확인해 주세요."},500)}
 }};

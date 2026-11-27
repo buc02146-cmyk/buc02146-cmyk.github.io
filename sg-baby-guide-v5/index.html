@@ -1023,6 +1023,13 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 }
 .playdate-edition{display:block;margin-bottom:3px;font-size:12px;font-weight:800;color:#7545a8}
 @media(prefers-color-scheme:dark){.playdate-edition{color:#e1baff}}
+.listing-dialog .listing-photo-choice:not([hidden]){display:flex;align-items:flex-start;gap:7px;font-weight:500}
+.listing-dialog .listing-photo-choice input{flex:none;width:auto;margin:3px 0 0}
+.listing-owner-actions{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0}
+.listing-owner-actions button,.playdate-form .cancel-playdate-edit{padding:6px 10px;border:1px solid #d8c5ed;border-radius:8px;background:transparent;color:inherit;font-size:12px}
+.rec-listing-photo{display:block;max-width:100%;max-height:200px;object-fit:contain;margin:8px 0;border-radius:8px}
+.playdate-item{scroll-margin-top:92px}
+.playdate-item:focus{outline:2px solid #9a72ce;outline-offset:3px}
 </style>
 </head>
 <body>
@@ -1132,6 +1139,9 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
    <label>닉네임 (선택)<input name="nickname" minlength="2" maxlength="24" placeholder="익명" autocomplete="nickname"></label>
    <label>관련 링크 (선택)<input name="url" type="url" maxlength="600" placeholder="https://"></label>
    <label>추천 이유<textarea name="reason" rows="3" minlength="8" maxlength="400" required></textarea></label>
+   <label>사진 한 장 (선택)<input name="photoFile" type="file" accept="image/jpeg,image/png,image/webp"></label>
+   <label class="listing-photo-choice"><input name="photo_consent" type="checkbox"> 직접 찍은 사진이며, 공개할 수 있고 개인정보가 포함되지 않았습니다.</label>
+   <label id="removeListingPhoto" class="listing-photo-choice" hidden><input name="remove_photo" type="checkbox"> 기존 사진 삭제</label>
    <input name="website" class="honeypot" tabindex="-1" autocomplete="off">
    <small class="source-note">등록하면 해당 카테고리와 ‘우리들의 추천’에 공개됩니다. 아이의 실명이나 연락처는 입력하지 마세요.</small>
    <div class="listing-form-actions"><button type="submit">등록하기</button><button type="button" id="closeListingDialog">닫기</button></div>
@@ -1224,19 +1234,57 @@ window.addEventListener('hashchange',restoreNavigationFromUrl);
 const LISTING_SUBCATEGORIES={"grocery":["치즈","요거트","분유","버터","떡뻥·간식","이유식 재료","생선·단백질","이유식·간편식","기타"],"gear":["기저귀","유모차","보습 로션·크림","이유식용품","목욕용품","위생·건강","기타"],"outing":["관람·체험","실내 놀이터","야외","식당"],"clinic":["소아과·병원","치과","기타 의료기관"],"medicine":["상비약","기타"],"preschool":["유치원 후기","Infant Care","Childcare","기타 교육"],"living":["예방접종","건강 가이드","어린이집","비자","도우미","기타 생활 정보"]};
 const RATED_LISTING_CATEGORIES=new Set(['grocery','gear','outing']);
 const LISTING_ITEM_NAMES={grocery:'제품',gear:'제품',clinic:'병원·의료기관',medicine:'약·상비약',outing:'장소',preschool:'교육기관',living:'생활 정보'};
-let communityListings=[];
+let authorToken;
+function authorHeaders(extra={}){
+ if(!authorToken){
+  try{
+   authorToken=localStorage.getItem('sgbg-author');
+   if(!authorToken){authorToken=crypto.randomUUID();localStorage.setItem('sgbg-author',authorToken);}
+  }catch{authorToken ||= crypto.randomUUID();}
+ }
+ return {...extra,'x-sgbg-author':authorToken};
+}
+const listingPhotoUrl=id=>'/api/listing-photos/'+encodeURIComponent(id);
+let communityListings=[],recommendationPosts=[];
+function recommendationActions(item){
+ const id=item.communityId||item.id;
+ if(!item.owned)return '';
+ return '<div class="listing-owner-actions"><button type="button" data-listing-edit="'+e(id)+'">추천 수정</button><button type="button" data-listing-delete="'+e(id)+'">추천 삭제</button></div>';
+}
+async function deleteOwnRecommendation(button){
+ const id=button.dataset.listingDelete;
+ if(!confirm('내 추천 글을 삭제할까요?'))return;
+ button.disabled=true;
+ try{
+  const res=await fetch('/api/recommendations/'+encodeURIComponent(id),{method:'DELETE',headers:authorHeaders()});
+  const result=await res.json();
+  if(!res.ok)throw Error(result.error||'삭제할 수 없습니다.');
+  communityListings=communityListings.filter(item=>item.communityId!==id);
+  if(state.category==='recommendations')await loadRecommendations();
+  else if(Object.hasOwn(LISTING_SUBCATEGORIES,state.category)){
+   if(!getSubset().some(item=>item.sub===state.sub))state.sub='전체';
+   render();
+   refreshDirectory(state.category);
+  }
+  const status=$('#listingFeedback');
+  status.textContent='추천 글을 삭제했습니다.';
+  status.hidden=false;
+ }catch(err){alert(err.message);button.disabled=false;}
+}
+
 let listingRatings=new Map(),listingRatingsReady=false,directoryRequest=0;
 const listingKey=item=>item.communityId?'community:'+item.communityId:'curated:'+item.category+':'+item.title;
 
 function toCommunityListing(item){
  return {communityId:item.id,category:item.category,title:item.title,sub:item.listing_subcategory,
   kind:item.listing_subcategory,region:item.listing_region||'Unknown',nickname:item.nickname||'익명',
+  owned:Boolean(item.owned),photo:item.has_photo?listingPhotoUrl(item.id):'',
   url:item.url,desc:item.reason,status:item.category==='outing'?'good':undefined,icon:item.category==='grocery'?'🛒':'🧸'};
 }
 async function refreshDirectory(category){
  const request=++directoryRequest;
  const [listingResult,ratingResult]=await Promise.allSettled([
-  fetch('/api/recommendations?listings=1',{cache:'no-store'}).then(r=>r.ok?r.json():null),
+  fetch('/api/recommendations?listings=1',{cache:'no-store',headers:authorHeaders()}).then(r=>r.ok?r.json():null),
   RATED_LISTING_CATEGORIES.has(category)?fetch('/api/listing-ratings',{cache:'no-store'}).then(r=>r.ok?r.json():null):null
  ]);
  if(request!==directoryRequest)return;
@@ -1265,13 +1313,25 @@ function syncListingFields(form){
  region.value=category===state.category&&state.region!=='All'?state.region:'Unknown';
  $('#listingNameLabel').textContent=category==='living'?'정보 제목':(LISTING_ITEM_NAMES[category]||'제품·장소')+' 이름';
 }
-function openListingDialog(category=''){
+function openListingDialog(category='',entry=null){
  const dialog=$('#listingDialog'),form=$('#listingForm');
  form.reset();
  const categorySelect=form.elements.namedItem('category');
  categorySelect.value=category;
  syncListingFields(form);
- $('#listingTitle').textContent='추천 남기기';
+ form.dataset.editId=entry?.communityId||entry?.id||'';
+ const hasPhoto=Boolean(entry?.photo||entry?.has_photo);
+ $('#removeListingPhoto').hidden=!hasPhoto;
+ form.elements.namedItem('remove_photo').disabled=!hasPhoto;
+ if(entry){
+  const values={title:entry.title,url:entry.url,nickname:entry.nickname,reason:entry.reason||entry.desc,
+   listing_subcategory:entry.listing_subcategory||entry.sub,listing_region:entry.listing_region||entry.region};
+  for(const [name,value] of Object.entries(values))if(value!=null)form.elements.namedItem(name).value=value;
+ }
+ const lockedCategory=Boolean(entry?.communityId||entry?.listing_subcategory);
+ categorySelect.disabled=lockedCategory;
+ $('#listingTitle').textContent=entry?'추천 수정하기':'추천 남기기';
+ form.querySelector('button[type=submit]').textContent=entry?'수정 저장':'등록하기';
  $('#listingFormStatus').textContent='';
  dialog.showModal();
 }
@@ -1285,14 +1345,27 @@ function initListingDialog(){
   event.preventDefault();
   const button=form.querySelector('button[type=submit]'),status=$('#listingFormStatus');
   const values=Object.fromEntries(new FormData(form));
+  values.category=category.value;
+  const id=form.dataset.editId;
+  const file=values.photoFile;
+  delete values.photoFile;
+  delete values.photo_consent;
+  if(values.remove_photo)values.photo=null;
+  delete values.remove_photo;
   button.disabled=true;
-  status.textContent='등록 중입니다…';
+  status.textContent=id?'저장 중입니다…':'등록 중입니다…';
   try{
-   const res=await fetch('/api/recommendations',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(values)});
+   if(file?.size){
+    if(!form.elements.namedItem('photo_consent').checked)throw Error('사진 공개에 동의해 주세요.');
+    values.photo=await compressReviewPhoto(file);
+    values.photo_consent=true;
+   }
+   const endpoint='/api/recommendations'+(id?'/'+encodeURIComponent(id):'');
+   const res=await fetch(endpoint,{method:id?'PATCH':'POST',headers:authorHeaders({'content-type':'application/json'}),body:JSON.stringify(values)});
    const result=await res.json();
    if(!res.ok||!result.id)throw Error(result.error||'등록하지 못했습니다.');
-   const entry=toCommunityListing({...values,id:result.id});
-   if(!communityListings.some(item=>item.communityId===entry.communityId))communityListings.unshift(entry);
+   const entry=toCommunityListing({...values,id:result.id,owned:true,has_photo:result.has_photo});
+   communityListings=[entry,...communityListings.filter(item=>item.communityId!==entry.communityId)];
    dialog.close();
    if(state.category!==entry.category)openCategory(entry.category);
    else refreshDirectory(entry.category);
@@ -1301,13 +1374,22 @@ function initListingDialog(){
     region:outing?entry.region:'All',outingMonth:null,rating:'전체'});
    render();
    const feedback=$('#listingFeedback');
-   feedback.textContent=entry.title+' 항목이 이 카테고리에 등록됐습니다.';
+   feedback.textContent=entry.title+(id?' 항목을 수정했습니다.':' 항목이 이 카테고리에 등록됐습니다.');
    feedback.hidden=false;
   }catch(err){status.textContent=err.message}finally{button.disabled=false;}
  };
  $('#detail').addEventListener('click',event=>{
   const add=event.target.closest('.listing-add-tile');
   if(add){openListingDialog(add.dataset.category);return;}
+  const edit=event.target.closest('[data-listing-edit]');
+  if(edit){
+   const id=edit.dataset.listingEdit;
+   const item=communityListings.find(candidate=>candidate.communityId===id)||recommendationPosts.find(candidate=>candidate.id===id);
+   if(item)openListingDialog(item.category,item);
+   return;
+  }
+  const remove=event.target.closest('[data-listing-delete]');
+  if(remove){deleteOwnRecommendation(remove);return;}
   const button=event.target.closest('.listing-rating-stars button');
   if(button)saveListingRating(button);
  });
@@ -1346,7 +1428,7 @@ function cardHTML(x){
  const badge=x.status==='bad'?'비추천':x.status==='good'?'추천':'';
  const label=(x.category==='medicine'?'약품':x.category==='grocery'?'먹거리':x.category==='gear'?'육아용품':'정보');
  const top='<div class="subline">'+e(x.sub||label)+(x.category==='gear'?' · '+e((x.age||[]).filter(a=>a!=='parents').map(a=>labels[a]||a).join(' · ')):'')+'</div>';
- const visual=x.category==='living'?'':'<div class="visual">'+imageMarkup(x)+(badge?'<span class="flag '+(x.status==='bad'?'bad':'')+'">'+badge+'</span>':'')+'</div>';
+ const visual=x.category==='living'&&!x.photo?'':'<div class="visual">'+imageMarkup(x)+(badge?'<span class="flag '+(x.status==='bad'?'bad':'')+'">'+badge+'</span>':'')+'</div>';
  const community=x.communityId?'<small class="source-note">이웃이 추가했어요 · '+e(x.nickname)+'</small>':'';
  const photoSource=x.photoCaption?'<small class="official-photo-note">'+e(x.photoCaption)+'</small>':'';
  const review=x.review?'<details class="review-fold"><summary>이용 후기 보기</summary><div class="review">'+e(x.review)+'</div></details>':'';
@@ -1366,7 +1448,7 @@ function cardHTML(x){
  +'<button type="submit">후기 등록</button><span class="product-review-status" aria-live="polite"></span></form>'
  +'<small class="product-review-privacy">후기는 다른 방문자에게 공개됩니다. 아이 이름이나 개인정보는 작성하지 마세요.</small></div></details>':'';
 
- return '<article class="product '+(x.category==='living'?'living-text-only':'')+'">'+visual+'<div class="product-body">'+top+'<h3>'+e(x.title)+'</h3><p>'+e(x.desc||'')+'</p>'+warning+reviewMeter+listingRatingHTML(x)+community+photoSource+review+productReviews+link+'</div></article>';
+ return '<article class="product '+(x.category==='living'&&!x.photo?'living-text-only':'')+'">'+visual+'<div class="product-body">'+top+'<h3>'+e(x.title)+'</h3><p>'+e(x.desc||'')+'</p>'+warning+reviewMeter+listingRatingHTML(x)+community+photoSource+review+productReviews+link+recommendationActions(x)+'</div></article>';
 }
 
 
@@ -1443,7 +1525,7 @@ function locationHTML(x,n){
  const review=x.review?'<details class="review-fold"><summary>방문 후기 보기</summary><div class="review">'+e(x.review)+'</div></details>':'';
  const links=(x.url?'<a href="'+e(x.url)+'" target="_blank" rel="noopener noreferrer">시설 안내 ↗</a>':'')+((n||x.communityId)?'<a href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(x.title+', '+(x.communityId?'Singapore':address))+'" target="_blank" rel="noopener noreferrer">길찾기 ↗</a>':'');
  const photo=x.photo?'<img class="place-thumb" src="'+e(x.photo)+'" loading="lazy" alt="'+e(x.title)+' 사진" onerror="this.remove()">':'';
- return '<article class="location"><span class="num '+(x.status==='bad'?'bad':'')+'">'+(n||'—')+'</span><div class="location-body"><h3>'+e(x.title)+'</h3><div class="meta">'+e(regionNames[x.region]||x.region)+' · '+e(x.kind||'장소')+(x.status==='bad'?' · 비추천 의견':'')+'</div>'+ageLabel+'<div class="short">'+e(summary)+'</div>'+community+listingRatingHTML(x)+review+'<p>'+e(address)+'</p><div class="location-links">'+links+'</div></div>'+photo+'</article>';
+ return '<article class="location"><span class="num '+(x.status==='bad'?'bad':'')+'">'+(n||'—')+'</span><div class="location-body"><h3>'+e(x.title)+'</h3><div class="meta">'+e(regionNames[x.region]||x.region)+' · '+e(x.kind||'장소')+(x.status==='bad'?' · 비추천 의견':'')+'</div>'+ageLabel+'<div class="short">'+e(summary)+'</div>'+community+listingRatingHTML(x)+review+'<p>'+e(address)+'</p><div class="location-links">'+links+'</div>'+recommendationActions(x)+'</div>'+photo+'</article>';
 }
 
 const MONTHLY_FRUITS={
@@ -1513,7 +1595,7 @@ async function renderRecommendations(){
  adminDeleteMode=false;
  const node=$('#recPanel');
  node.innerHTML='<div class="rec-layout"><div class="rec-formbox"><h3>추천 글 남기기</h3><p>추천이 선택한 카테고리에 바로 표시돼요.</p><button type="button" id="recListingOpen" class="add-listing-button">추천 남기기</button></div>'
- +'<div class="rec-listbox"><h3>모두의 추천</h3><p>방문자가 공유한 추천을 최신순으로 볼 수 있습니다.</p><div id="recItems">추천 글을 불러오는 중입니다…</div><div class="admin-tools"><button type="button" id="adminToggle" class="admin-toggle">관리자 · 글 관리</button><span class="admin-hint">삭제 권한은 관리자에게만 있습니다.</span></div><div id="adminStatus" aria-live="polite"></div></div></div>';
+ +'<div class="rec-listbox"><h3>모두의 추천</h3><p>방문자가 공유한 추천을 최신순으로 볼 수 있습니다.</p><div id="recItems">추천 글을 불러오는 중입니다…</div><div class="admin-tools"><button type="button" id="adminToggle" class="admin-toggle">관리자 · 글 관리</button><span class="admin-hint">작성자는 본인 글을 관리할 수 있습니다.</span></div><div id="adminStatus" aria-live="polite"></div></div></div>';
  $('#recListingOpen').onclick=()=>openListingDialog();
  $('#adminToggle').onclick=()=>{
   adminDeleteMode=!adminDeleteMode;$('#adminToggle').textContent=adminDeleteMode?'관리 종료':'관리자 · 글 관리';
@@ -1526,15 +1608,17 @@ async function loadRecommendations(){
  const out=$('#recItems');
  if(!out)return;
  try{
-  const res=await fetch('/api/recommendations'),data=await res.json();
+  const res=await fetch('/api/recommendations',{headers:authorHeaders()}),data=await res.json();
   if(!res.ok)throw Error(data.error||'추천 글을 불러올 수 없습니다.');
   const posts=data.items||[];
+  recommendationPosts=posts;
   out.innerHTML=posts.length?posts.map(p=>{
    const type=e(REC_CATEGORIES.find(([id])=>id===p.category)?.[1]||'추천');
    const link=p.url?'<a href="'+e(p.url)+'" target="_blank" rel="nofollow noopener noreferrer">상품 · 장소 링크 ↗</a>':'';
    const erase=adminDeleteMode?'<button type="button" class="delete-post" data-delete="'+e(p.id)+'" aria-label="'+e(p.title)+' 글 삭제">삭제</button>':'';
    const date=p.created_at?new Date(p.created_at).toLocaleDateString('ko-KR'):'';
-   return '<article class="rec-post"><span>'+type+' · '+e(date)+'</span><h4>'+e(p.title)+'</h4><div class="rec-post-by">by '+e(p.nickname||'익명')+'</div><p>'+e(p.reason)+'</p><div class="admin-row" style="margin-top:10px">'+link+erase+'</div></article>';
+   const photo=p.has_photo?'<img class="rec-listing-photo" src="'+listingPhotoUrl(p.id)+'" alt="'+e(p.title)+' 사진" loading="lazy">':'';
+   return '<article class="rec-post"><span>'+type+' · '+e(date)+'</span><h4>'+e(p.title)+'</h4><div class="rec-post-by">by '+e(p.nickname||'익명')+'</div><p>'+e(p.reason)+'</p>'+photo+recommendationActions(p)+'<div class="admin-row" style="margin-top:10px">'+link+erase+'</div></article>';
   }).join(''):'<div class="empty">아직 추천 글이 없습니다. 첫 추천을 남겨주세요!</div>';
   if(adminDeleteMode){
    out.querySelectorAll('[data-delete]').forEach(button=>button.onclick=async()=>{
@@ -1707,7 +1791,7 @@ function setupGlobalSearch(){
 const dateLabel=local=>{const date=new Date(local+'+08:00');return Number.isNaN(date.getTime())?local:date.toLocaleString('ko-KR',{timeZone:'Asia/Singapore',month:'long',day:'numeric',weekday:'short',hour:'2-digit',minute:'2-digit'})};
 const futurePlaydate=x=>Date.parse(x.starts_at+'+08:00')>Date.now()-3600000;
 async function fetchPlaydates(){
- const r=await fetch('/api/playdates',{cache:'no-store'});const j=await r.json();if(!r.ok)throw Error(j.error||'모임을 불러오지 못했습니다.');
+ const r=await fetch('/api/playdates',{cache:'no-store',headers:authorHeaders()});const j=await r.json();if(!r.ok)throw Error(j.error||'모임을 불러오지 못했습니다.');
  playdateCache=(j.items||[]).filter(futurePlaydate);return playdateCache;
 }
 function playdateAttendance(p){
@@ -1722,17 +1806,18 @@ function playdateCard(p,home=false){
  const edition='<span class="playdate-edition">'+playdateEdition(p)+'</span>';
  const href='https://open.kakao.com/o/gKHZMCYi';
  const {filled,cap,full}=playdateAttendance(p);
- if(home)return '<button type="button" class="home-playdate-teaser" data-playdate-open="1">'+edition+'<strong>'+e(p.place)+'</strong><small>📅 '+e(dateLabel(p.starts_at))+'</small><small>👶 '+p.min_month+'–'+p.max_month+'M · '+e(p.region)+'</small><small class="playdate-small-count">'+(full?'모집 마감':filled+'/'+cap+'명 모집 중')+'</small></button>';
+ if(home)return '<button type="button" class="home-playdate-teaser" data-playdate-open="'+e(p.id)+'">'+edition+'<strong>'+e(p.place)+'</strong><small>📅 '+e(dateLabel(p.starts_at))+'</small><small>👶 '+p.min_month+'–'+p.max_month+'M · '+e(p.region)+'</small><small class="playdate-small-count">'+(full?'모집 마감':filled+'/'+cap+'명 모집 중')+'</small></button>';
  const attendees=p.participant_details||(p.participants||[]).map(nickname=>({nickname}));
  const names=attendees.map(person=>'<span class="participant-name">'+e(person.nickname)+(person.child_month==null?'':' · '+person.child_month+'개월')+'</span>').join('');
  const joined=Boolean(getPlaydateClaim(p.id));
  const joinButton=joined?'<button type="button" class="playdate-leave" data-id="'+e(p.id)+'">참여 취소</button>'
   :'<button type="button" class="playdate-join" data-id="'+e(p.id)+'" '+(full?'disabled':'')+'>'+(full?'모집 마감':'💜 참여하기')+'</button>';
- return '<article class="playdate-item">'+edition+'<h4>📍 '+e(p.place)+'</h4><div class="playdate-pills"><span>📅 '+e(dateLabel(p.starts_at))+'</span><span>👶 '+p.min_month+'–'+p.max_month+'M</span><span>👥 '+filled+'/'+cap+'명'+(full?' · 모집 마감':' · 모집 중')+'</span><span>'+e(p.region)+'</span></div>'
+ return '<article class="playdate-item" data-meeting-id="'+e(p.id)+'" tabindex="-1">'+edition+'<h4>📍 '+e(p.place)+'</h4><div class="playdate-pills"><span>📅 '+e(dateLabel(p.starts_at))+'</span><span>👶 '+p.min_month+'–'+p.max_month+'M</span><span>👥 '+filled+'/'+cap+'명'+(full?' · 모집 마감':' · 모집 중')+'</span><span>'+e(p.region)+'</span></div>'
   +'<p>☕ '+e(p.details)+'</p>'+(p.notes?'<small>💬 '+e(p.notes)+'</small>':'')
   +'<p class="playdate-host">모임장 · '+e(p.nickname)+'</p>'
   +'<div class="playdate-attendees"><b>참여 신청 '+Math.max(0,filled-1)+'명</b><div class="attendee-names">'+(names||'<small>첫 참여자를 기다리고 있어요.</small>')+'</div></div>'
-  +'<div class="playdate-actions">'+joinButton+'<a href="'+href+'" target="_blank" rel="noopener noreferrer">카카오톡 문의 ↗</a><button type="button" class="playdate-copy" data-id="'+e(p.id)+'">모집글 복사</button><button type="button" class="playdate-remove" data-id="'+e(p.id)+'">관리자 삭제</button></div></article>';
+  +'<div class="playdate-actions">'+(p.owned?'':joinButton)
+  +'<button type="button" class="playdate-edit" data-id="'+e(p.id)+'">'+(p.owned?'모집글 수정':'관리자 수정')+'</button><a href="'+href+'" target="_blank" rel="noopener noreferrer">카카오톡 문의 ↗</a><button type="button" class="playdate-copy" data-id="'+e(p.id)+'">모집글 복사</button><button type="button" class="playdate-remove" data-id="'+e(p.id)+'">관리자 삭제</button></div></article>';
 }
 async function showPlaydateHome(){
  const el=document.querySelector('#homePlaydateList');if(!el)return;
@@ -1741,7 +1826,7 @@ async function showPlaydateHome(){
   const now=Date.now();
   const recruiting=posts.filter(p=>Date.parse(p.starts_at+'+08:00')>now&&!playdateAttendance(p).full);
   el.innerHTML=recruiting.map(p=>playdateCard(p,true)).join('')||'<p>지금 모집 중인 모임이 없어요.</p>';
-  el.querySelectorAll('[data-playdate-open]').forEach(button=>button.onclick=browseHomePlaydates);
+  el.querySelectorAll('[data-playdate-open]').forEach(button=>button.onclick=()=>openHomePlaydate(button.dataset.playdateOpen));
  }catch{el.innerHTML='<p>모임을 불러오지 못했어요. 잠시 후 다시 확인해 주세요.</p>'}
 }
 const playdateClaims=new Map();
@@ -1815,6 +1900,25 @@ function showPlaydatePosts(){
    const status=$('#playdateStatus');if(status)status.textContent='참여 신청을 취소했습니다.';
   }catch(err){alert(err.message)}finally{button.disabled=false;}
  });
+ wrap.querySelectorAll('.playdate-edit').forEach(btn=>btn.onclick=()=>{
+  const meeting=playdateCache.find(item=>item.id===btn.dataset.id);
+  if(!meeting)return;
+  const secret=meeting.owned?'':prompt('관리자 비밀번호를 입력해 주세요.');
+  if(!meeting.owned&&!secret)return;
+  const form=$('#playdateForm');
+  form.dataset.editId=meeting.id;
+  for(const name of ['nickname','place','region','starts_at','min_month','max_month','capacity','details','notes']){
+   form.elements.namedItem(name).value=name==='starts_at'?meeting[name].slice(0,16):meeting[name];
+  }
+  form.elements.namedItem('nickname').readOnly=true;
+  form.querySelector('button[type=submit]').textContent='수정 저장';
+  $('#playdateFormHeading').textContent='✏️ '+playdateEdition(meeting)+' 수정';
+  $('#cancelPlaydateEdit').hidden=false;
+  $('#playdateStatus').textContent='';
+  form.playdateAdminSecret=secret;
+  form.closest('.playdate-formbox').scrollIntoView({block:'start'});
+  form.elements.namedItem('place').focus({preventScroll:true});
+ });
  wrap.querySelectorAll('.playdate-copy').forEach(btn=>btn.onclick=async()=>{
   const p=playdateCache.find(x=>x.id===btn.dataset.id);if(!p)return;
   const msg='🧸 '+playdateEdition(p)+' 모집\n\n📍 장소: '+p.place+'\n📅 날짜 및 시간: '+dateLabel(p.starts_at)+'\n👶 아이 월령: '+p.min_month+'–'+p.max_month+'개월\n👥 모집 인원: '+p.capacity+'명\n☕ 모임 내용: '+p.details+'\n💬 기타 사항: '+(p.notes||'-');
@@ -1826,11 +1930,16 @@ function showPlaydatePosts(){
   try{const res=await fetch('/api/playdates/'+encodeURIComponent(btn.dataset.id),{method:'DELETE',headers:{'x-admin-secret':secret}});const data=await res.json();if(!res.ok)throw Error(data.error||'삭제할 수 없습니다.');await fetchPlaydates();showPlaydatePosts();showPlaydateHome();}catch(err){alert(err.message)}
  });
 }
+let pendingMeetingFocus=null;
+function openHomePlaydate(id){
+ pendingMeetingFocus=id;
+ openCategory('playdate');
+}
 async function renderPlaydates(){
  const root=document.querySelector('#playdatePanel');if(!root)return;
  const monthOptions=Array.from({length:61},(_,i)=>'<option value="'+i+'">'+i+'M</option>').join('');
  const regionOptions=PLAYDATE_REGIONS.filter(([v])=>v!=='All').map(([v,n])=>'<option value="'+v+'">'+n+'</option>').join('');
- root.innerHTML='<div class="playdate-layout"><section class="playdate-formbox"><h3>🧸 플레이데이트 모집하기</h3><p class="source-note">채팅방의 플데양식과 동일한 항목으로 모임을 등록할 수 있어요. 홈페이지에서 닉네임으로 참여 신청하고, 세부 소통은 카카오톡에서 진행합니다.</p><form class="playdate-form" id="playdateForm">'
+ root.innerHTML='<div class="playdate-layout"><section class="playdate-formbox"><h3 id="playdateFormHeading">🧸 플레이데이트 모집하기</h3><p class="source-note">채팅방의 플데양식과 동일한 항목으로 모임을 등록할 수 있어요. 홈페이지에서 닉네임으로 참여 신청하고, 세부 소통은 카카오톡에서 진행합니다.</p><form class="playdate-form" id="playdateForm">'
  +'<label>닉네임<input name="nickname" maxlength="24" minlength="2" required placeholder="예: 토끼맘"></label>'
  +'<label>📍 장소<input name="place" maxlength="110" required placeholder="예: West Coast Park"></label>'
  +'<label>지역<select name="region">'+regionOptions+'</select></label>'
@@ -1839,23 +1948,50 @@ async function renderPlaydates(){
  +'<label>👥 모집 인원<input name="capacity" type="number" min="2" max="50" value="4" required></label>'
  +'<label>☕ 모임 내용<textarea name="details" rows="3" maxlength="500" minlength="4" required placeholder="무엇을 하며 놀 예정인가요?"></textarea></label>'
  +'<label>💬 기타 사항<textarea name="notes" rows="2" maxlength="450" placeholder="준비물·유의사항 등"></textarea></label>'
- +'<input name="website" class="honeypot" tabindex="-1" autocomplete="off"><button type="submit">플레이데이트 모집 등록</button><div class="source-note">아이 실명·개인 연락처·집 주소는 작성하지 마세요.</div><p id="playdateStatus" aria-live="polite"></p></form></section>'
+ +'<input name="website" class="honeypot" tabindex="-1" autocomplete="off"><button type="submit">플레이데이트 모집 등록</button><button type="button" class="cancel-playdate-edit" id="cancelPlaydateEdit" hidden>수정 취소</button><div class="source-note">아이 실명·개인 연락처·집 주소는 작성하지 마세요.</div><p id="playdateStatus" aria-live="polite"></p></form></section>'
  +'<section class="playdate-listbox"><h3>📅 모집 중인 플레이데이트</h3><div class="playdate-list-filters"><select id="pdRegionFilter"><option value="All">전체 지역</option>'+regionOptions+'</select><select id="pdMonthFilter"><option value="all">전체 월령</option>'+monthOptions+'</select></div><div id="playdateList" class="playdate-list">모임을 불러오는 중입니다…</div></section></div>';
  const form=document.querySelector('#playdateForm');
- form.querySelector('[name="max_month"]').value='24';
+ const resetPlaydateForm=()=>{
+  form.reset();
+  delete form.dataset.editId;
+  form.playdateAdminSecret='';
+  form.elements.namedItem('nickname').readOnly=false;
+  form.querySelector('[name="max_month"]').value='24';
+  form.querySelector('button[type=submit]').textContent='플레이데이트 모집 등록';
+  $('#playdateFormHeading').textContent='🧸 플레이데이트 모집하기';
+  $('#cancelPlaydateEdit').hidden=true;
+ };
+ resetPlaydateForm();
+ $('#cancelPlaydateEdit').onclick=()=>{resetPlaydateForm();$('#playdateStatus').textContent='';};
  form.onsubmit=async event=>{
   event.preventDefault();const btn=form.querySelector('button[type="submit"]');btn.disabled=true;
-  const status=document.querySelector('#playdateStatus');status.textContent='모임을 등록하고 있습니다…';
+  const id=form.dataset.editId;
+  const status=form.querySelector('#playdateStatus');status.textContent=id?'모임을 수정하고 있습니다…':'모임을 등록하고 있습니다…';
   try{
-   const d=Object.fromEntries(new FormData(form));const res=await fetch('/api/playdates',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(d)}),v=await res.json();
-   if(!res.ok)throw Error(v.error||'등록하지 못했습니다.');
-   status.textContent='모임이 등록됐습니다! 카카오톡에서 참가자를 모집해 보세요.';form.reset();form.querySelector('[name="max_month"]').value='24';
+   const d=Object.fromEntries(new FormData(form));
+   const secret=form.playdateAdminSecret;
+   const headers=authorHeaders({'content-type':'application/json',...(secret?{'x-admin-secret':secret}:{})});
+   const res=await fetch('/api/playdates'+(id?'/'+encodeURIComponent(id):''),{method:id?'PATCH':'POST',headers,body:JSON.stringify(d)}),v=await res.json();
+   if(!res.ok)throw Error(v.error||'저장하지 못했습니다.');
+   if(!form.isConnected)return;
+   resetPlaydateForm();
+   status.textContent=id?'모집글을 수정했습니다.':'모임이 등록됐습니다! 카카오톡에서 참가자를 모집해 보세요.';
    await fetchPlaydates();showPlaydatePosts();showPlaydateHome();
   }catch(err){status.textContent=err.message}finally{btn.disabled=false}
  };
  document.querySelector('#pdRegionFilter').onchange=showPlaydatePosts;
  document.querySelector('#pdMonthFilter').onchange=showPlaydatePosts;
- try{await fetchPlaydates();showPlaydatePosts()}catch(err){document.querySelector('#playdateList').innerHTML='<div class="empty">'+e(err.message)+'</div>'}
+ const focusId=pendingMeetingFocus;
+ pendingMeetingFocus=null;
+ try{
+  await fetchPlaydates();
+  if(state.category!=='playdate')return;
+  showPlaydatePosts();
+  if(focusId){
+   const card=[...root.querySelectorAll('[data-meeting-id]')].find(item=>item.dataset.meetingId===focusId);
+   if(card){card.scrollIntoView({block:'start'});card.focus({preventScroll:true});}
+  }
+ }catch(err){document.querySelector('#playdateList').innerHTML='<div class="empty">'+e(err.message)+'</div>'}
 }
 function shortReviewDate(timestamp){
  if(!timestamp)return '';
