@@ -36,7 +36,9 @@ a{color:var(--sage);text-decoration:none}.hide{display:none!important}
 .topbar{border-bottom:1px solid var(--line);background:rgba(255,255,253,.90);backdrop-filter:blur(14px);position:sticky;top:0;z-index:10}
 .topbar-inner{width:min(1140px,calc(100% - 40px));margin:auto;min-height:68px;display:flex;align-items:center;justify-content:space-between;gap:16px}
 .site-logo{font-size:19px;font-weight:800;letter-spacing:-.045em;color:var(--ink);display:flex;align-items:center;gap:10px}.site-logo span{width:31px;height:31px;border-radius:12px;display:grid;place-items:center;color:#426e57;background:#e1eee5;font-size:19px}.topnote{font-size:12px;color:var(--muted);font-weight:500}.home-link{display:none;border:1px solid #dce6dd;background:#fff;border-radius:50px;padding:8px 13px;color:var(--sage);font-weight:700;font-size:13px}
-.home-link.visible{display:inline-flex}
+body.detail-open #todayVisitors{display:none}
+body.detail-open .site-logo{white-space:nowrap}
+body.detail-open .site-logo span{flex:none}
 .homeLanding{padding:40px 0 65px}.hero{border-radius:28px;padding:43px 48px;background:linear-gradient(110deg,#eaf3eb 0,#f8f5e9 100%);border:1px solid #e4ede3;position:relative;overflow:hidden}
 .hero:after{content:'';position:absolute;right:-55px;bottom:-120px;width:330px;height:330px;background:radial-gradient(circle,#f8dec7 0,rgba(248,222,199,.25) 55%,transparent 60%);pointer-events:none}
 .eyebrow{font-size:11px;font-weight:800;letter-spacing:.16em;color:#658f76;text-transform:uppercase}
@@ -946,7 +948,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 </head>
 <body>
 
-<div class="topbar"><div class="topbar-inner"><a class="site-logo" href="/" id="brandHome"><span>✳</span> 싱가포르 육아백과</a><div class="header-actions"><span class="topnote">우리 가족의 싱가포르 육아 가이드</span><span class="visitor-count" id="todayVisitors" title="싱가포르 시간 기준 오늘 방문한 브라우저 수" aria-label="오늘 방문자 수"><span aria-hidden="true">👀</span> 오늘 <strong id="todayVisitorNumber">—</strong></span><button id="topHome" class="home-link">카테고리 전체</button><a class="kakao-openchat" href="https://open.kakao.com/o/gKHZMCYi" target="_blank" rel="noopener noreferrer" aria-label="카카오톡 싱가포르 영유아 소통방 열기"><span class="kakao-bubble" aria-hidden="true">💬</span><span>카카오톡 오픈채팅</span><span aria-hidden="true">↗</span></a></div></div></div>
+<div class="topbar"><div class="topbar-inner"><a class="site-logo" href="/" id="brandHome"><span>✳</span> 싱가포르 육아백과</a><div class="header-actions"><span class="topnote">우리 가족의 싱가포르 육아 가이드</span><span class="visitor-count" id="todayVisitors" title="싱가포르 시간 기준 오늘 방문한 브라우저 수" aria-label="오늘 방문자 수"><span aria-hidden="true">👀</span> 오늘 <strong id="todayVisitorNumber">—</strong></span><a class="kakao-openchat" href="https://open.kakao.com/o/gKHZMCYi" target="_blank" rel="noopener noreferrer" aria-label="카카오톡 싱가포르 영유아 소통방 열기"><span class="kakao-bubble" aria-hidden="true">💬</span><span>카카오톡 오픈채팅</span><span aria-hidden="true">↗</span></a></div></div></div>
 <main class="wrap">
 <section id="homeLanding" class="homeLanding">
  <div class="hero">
@@ -1108,7 +1110,9 @@ function setGroupTab(childId,updateHash=true){
 }
 function openCategory(id,updateHistory=true){
  const group=findNavigationGroup(id);if(!group)return;
- $('#homeLanding').classList.add('hide');$('#topHome').classList.add('visible');$('#detail').classList.add('visible');
+ $('#homeLanding').classList.add('hide');
+ $('#detail').classList.add('visible');
+ document.body.classList.add('detail-open');
  setGroupTab(id,updateHistory);
  window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -1118,11 +1122,10 @@ function returnHome(updateHistory=true){
  $('#detail').classList.remove('visible');
  $('#homeLanding').classList.remove('hide');
  showPlaydateHome();
- $('#topHome').classList.remove('visible');
+ document.body.classList.remove('detail-open');
  window.scrollTo({top:0,behavior:'smooth'});
 }
 $('#backHome').onclick=()=>returnHome();
-$('#topHome').onclick=()=>returnHome();
 $('#brandHome').addEventListener('click',ev=>{ev.preventDefault();returnHome()});
 function restoreNavigationFromUrl(){
  const target=decodeURIComponent(location.hash.slice(1));
