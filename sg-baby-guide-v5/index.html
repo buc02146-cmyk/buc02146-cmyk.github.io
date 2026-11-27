@@ -561,6 +561,16 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 .playdate-join-dialog .join-modal-actions button{flex:1;border-radius:11px;padding:13px;font-weight:800;background:#f0e8f9;color:#6d5099;border:0}
 .playdate-join-dialog .join-modal-actions button[type=submit]{background:#7752b8;color:#fff}
 .playdate-join-dialog .join-modal-actions button:disabled{opacity:.58}
+
+.homeLanding .hero-art-interactive{max-width:390px}
+.homeLanding .pixel-hero-scene{width:100%;height:auto;display:block;aspect-ratio:3/2;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 10px 13px rgba(92,62,136,.08));transform-origin:50% 78%}
+.homeLanding .hero-art-interactive.is-bouncing .pixel-hero-scene{animation:hero-twinkle-bounce 950ms cubic-bezier(.25,.85,.32,1) both}
+.homeLanding .hero-speech{right:0;top:-10%;z-index:3;white-space:nowrap}
+.homeLanding .hero-art-interactive{position:relative}
+.homeLanding .hero-art-interactive:after{content:'TOUCH ME ✦';position:absolute;bottom:-15px;right:8px;color:#a27fc3;font-size:10px;font-weight:850;letter-spacing:.15em;pointer-events:none}
+@media(max-width:760px){.homeLanding .hero-speech{right:0;top:-15px}.homeLanding .hero-art-interactive:after{bottom:-11px;font-size:8px}}
+@media(max-width:520px){.homeLanding .hero-art-interactive{max-width:210px}.homeLanding .hero-speech{top:0;right:3px}}
+@media(prefers-reduced-motion:reduce){.homeLanding .hero-art-interactive.is-bouncing .pixel-hero-scene{animation:none!important}}
 </style>
 </head>
 <body>
@@ -575,49 +585,12 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
     <p>장보기부터 병원, 교육, 아이와의 나들이까지.<br class="hero-desktop-break"> 우리 가족에게 필요한 정보만 골라보세요.</p>
     <div class="hero-tagline"><span>✦</span> 아이와 함께하는 싱가포르 생활</div>
   </div>
-  <div class="hero-art hero-art-interactive" id="heroAnimation" aria-label="마리나 베이 샌즈 일러스트. 누르면 환영 메시지가 나타납니다." role="button" tabindex="0">
+  <div class="hero-art hero-art-interactive" id="heroAnimation" aria-label="소꿉놀이하는 픽셀아트 아기들을 누르면 귀여운 말풍선이 나옵니다." role="button" tabindex="0">
     <div class="hero-speech" id="heroSpeech" aria-hidden="true">안녕하세요~ 👋</div>
     <div class="hero-heart hero-heart-one" aria-hidden="true">♥</div>
     <div class="hero-heart hero-heart-two" aria-hidden="true">♥</div>
     <div class="hero-heart hero-heart-three" aria-hidden="true">♥</div>
-    <svg viewBox="0 0 360 246" xmlns="http://www.w3.org/2000/svg" focusable="false">
-      <ellipse cx="181" cy="217" rx="154" ry="17" fill="#d8c5f0" opacity=".65"/>
-      <circle cx="182" cy="114" r="102" fill="#e5d5f9"/>
-      <circle cx="267" cy="45" r="15" fill="#ffe2aa"/>
-      <path d="M67 194c43-18 78-18 110-4 44 19 80 12 124-2" fill="none" stroke="#c4a5e5" stroke-width="10" stroke-linecap="round" opacity=".65"/>
-      <g fill="#9374c5" stroke="#7354ac" stroke-width="2.5">
-        <rect x="106" y="105" width="42" height="91" rx="7"/>
-        <rect x="160" y="101" width="42" height="95" rx="7"/>
-        <rect x="214" y="107" width="42" height="89" rx="7"/>
-      </g>
-      <g fill="#e9dcfb">
-        <rect x="117" y="119" width="8" height="13" rx="3"/><rect x="129" y="119" width="8" height="13" rx="3"/>
-        <rect x="172" y="117" width="8" height="13" rx="3"/><rect x="184" y="117" width="8" height="13" rx="3"/>
-        <rect x="225" y="119" width="8" height="13" rx="3"/><rect x="237" y="119" width="8" height="13" rx="3"/>
-        <rect x="117" y="144" width="8" height="13" rx="3"/><rect x="129" y="144" width="8" height="13" rx="3"/>
-        <rect x="172" y="142" width="8" height="13" rx="3"/><rect x="184" y="142" width="8" height="13" rx="3"/>
-        <rect x="225" y="144" width="8" height="13" rx="3"/><rect x="237" y="144" width="8" height="13" rx="3"/>
-      </g>
-      <path d="M91 100c18-7 44-10 84-10h55c18 0 37 2 46 9l-8 13H101z" fill="#7150ae"/>
-      <rect x="92" y="96" width="181" height="10" rx="5" fill="#7150ae"/>
-      <g stroke="#9c78c8" stroke-width="5" stroke-linecap="round" fill="none">
-        <path d="M67 200V143M54 172l13-29 15 27M50 161l17-18 23 13"/>
-        <path d="M295 202v-52m-15 29 15-29 17 27m-27-27 10 0 20 10"/>
-      </g>
-      <g fill="#c9a8dd">
-        <ellipse cx="63" cy="141" rx="21" ry="10" transform="rotate(-24 63 141)"/>
-        <ellipse cx="76" cy="139" rx="20" ry="9" transform="rotate(26 76 139)"/>
-        <ellipse cx="292" cy="149" rx="22" ry="10" transform="rotate(-18 292 149)"/>
-        <ellipse cx="303" cy="148" rx="20" ry="10" transform="rotate(24 303 148)"/>
-      </g>
-      <g fill="#ffd8c6">
-        <circle cx="87" cy="66" r="4"/><circle cx="292" cy="90" r="5"/><circle cx="50" cy="105" r="3.5"/>
-      </g>
-      <path d="M74 61l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z" fill="#f4adae"/>
-      <g fill="none" stroke="#c3a9e4" stroke-width="3" stroke-linecap="round">
-        <path d="M126 210c9 4 18 4 26 0M205 210c10 4 19 4 27 0M261 215c8 3 14 3 20 0"/>
-      </g>
-    </svg>
+    <img class="pixel-hero-scene" src="data:image/webp;base64,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" alt="픽셀아트로 표현한 네 명의 아기들이 소꿉놀이와 장난감 놀이를 하는 모습" loading="eager" decoding="async">
   </div>
 </div>
 
@@ -1264,7 +1237,7 @@ function mountHomeWidgets(){
 function initHeroGreeting(){
  const art=document.querySelector('#heroAnimation'),speech=document.querySelector('#heroSpeech');
  if(!art||!speech)return;
- const phrases=['환영해요! 💜','안녕하세요~ 👋','오늘도 좋은 하루!','우리 함께 놀아요 🧸','반가워요! 💚','싱가포르 육아 파이팅!'];
+ const phrases=['우와, 재밌다~ 💜','우리 엄마 최고~!','또 놀자! 🧸','친구야 안녕~','소꿉놀이 하자! 🍰','오늘도 신나요~ ✨','엄마 사랑해~ 💗'];
  const reduceMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true;
  let count=0,clearSpeech=0,clearEffects=0,interval=0;
  const greet=()=>{
