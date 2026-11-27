@@ -2,7 +2,7 @@
 const CATEGORIES=new Set(["grocery","clinic","medicine","gear","outing","preschool","fruit","living","prep"]);
 const LISTING_SUBCATEGORIES={"grocery":["치즈","요거트","분유","버터","떡뻥·간식","이유식 재료","생선·단백질","이유식·간편식","기타"],"gear":["기저귀","유모차","보습 로션·크림","이유식용품","목욕용품","위생·건강","기타"],"outing":["관람·체험","실내 놀이터","야외","식당"],"clinic":["소아과·병원","치과","기타 의료기관"],"medicine":["상비약","기타"],"preschool":["유치원 후기","Infant Care","Childcare","기타 교육"],"living":["예방접종","건강 가이드","어린이집","비자","도우미","기타 생활 정보"]};
 const LISTING_REGIONS=new Set(["West","North","Central","East","South","Unknown"]);
-const CURATED_LISTINGS=new Set(["grocery:Organic Valley Baby Swiss","grocery:Arla Natural Mozzarella Block 200g","grocery:Tamar Valley Greek Style Yoghurt","grocery:Jalna Greek Yoghurt","grocery:Lurpak Unsalted Butter 250g","grocery:질마재 유기농 현미귀리 스틱","gear:Nosiboo Pro 콧물흡입기","gear:MamyPoko Air Fit Marshmallow 팬티","gear:하기스 네이처메이드","gear:하기스 네이처메이드 오버나이트","gear:Pampers Premium Care","gear:Rascal + Friends 밤기저귀","gear:Merries Premium","gear:Doona","gear:Bugaboo Dragonfly","gear:Stokke YOYO3","gear:Silver Cross Dune","outing:Singapore Oceanarium","outing:Curiosity Cove","outing:Exploria","outing:National Gallery Singapore","outing:Children’s Museum Singapore","outing:Jacob Ballas Children’s Garden","outing:Kiztopia @ Jewel Changi","outing:Kiztopia @ New Bahru","outing:Paragon 실내 미끄럼틀 (Paragon Junior)","outing:HomeTeamNS T-Play @ Bukit Batok","outing:Marché @ 313 Somerset","outing:Marché @ VivoCity","outing:Amazonia @ Great World","outing:T-Play · 지점 미확인 후기","grocery:Fassler Sashimi Grade Salmon Portion Skinless (3pcs)","gear:Cetaphil Baby Daily Lotion","gear:Mustela Hydra Bébé Body Lotion","gear:ATOPALM MLE Cream","gear:Physiogel Calming Relief A.I. Cream","gear:Aveeno Baby Daily Moisture Lotion","gear:Richell Hinyari Shinai Bath Chair R","gear:Sudocrem Antiseptic Healing Cream","gear:Konny Bib Muslin Bandana","grocery:맘마밀 실온 이유식","gear:ATOPALM MLE Lotion","gear:Physiogel Soothing Care A.I. Cream","gear:ZEROID Intensive Oint-Cream","gear:Richell Soft Baby Chair","gear:Shnuggle Baby Bath","grocery:Aptamil Gold+ Infant Milk Formula Stage 1 900g","grocery:Nestlé NAN OPTIPRO Stage 1 800g","grocery:Abbott Similac Infant Milk Formula Stage 1 850g"]);
+const CURATED_LISTINGS=new Set(["grocery:Organic Valley Baby Swiss","grocery:Arla Natural Mozzarella Block 200g","grocery:Tamar Valley Greek Style Yoghurt","grocery:Jalna Greek Yoghurt","grocery:Lurpak Unsalted Butter 250g","grocery:질마재 유기농 현미귀리 스틱","gear:Nosiboo Pro 콧물흡입기","gear:MamyPoko Air Fit Marshmallow 팬티","gear:하기스 네이처메이드","gear:하기스 네이처메이드 오버나이트","gear:Pampers Premium Care","gear:Rascal + Friends 밤기저귀","gear:Merries Premium","gear:Doona","gear:Bugaboo Dragonfly","gear:Stokke YOYO3","gear:Silver Cross Dune","outing:Singapore Oceanarium","outing:Curiosity Cove","outing:Exploria","outing:National Gallery Singapore","outing:Children’s Museum Singapore","outing:Jacob Ballas Children’s Garden","outing:Kiztopia @ Jewel Changi","outing:Kiztopia @ New Bahru","outing:Paragon 실내 미끄럼틀 (Paragon Junior)","outing:HomeTeamNS T-Play @ Bukit Batok","outing:Marché @ 313 Somerset","outing:Marché @ VivoCity","outing:Amazonia @ Great World","outing:T-Play · 지점 미확인 후기","grocery:Fassler Sashimi Grade Salmon Portion Skinless (3pcs)","gear:Cetaphil Baby Daily Lotion","gear:Mustela Hydra Bébé Body Lotion","gear:ATOPALM MLE Cream","gear:Physiogel Calming Relief A.I. Cream","gear:Aveeno Baby Daily Moisture Lotion","gear:Richell Hinyari Shinai Bath Chair R","gear:Sudocrem Antiseptic Healing Cream","gear:Konny Bib Muslin Bandana","grocery:맘마밀 실온 이유식","gear:ATOPALM MLE Lotion","gear:Physiogel Soothing Care A.I. Cream","gear:ZEROID Intensive Oint-Cream","gear:Richell Soft Baby Chair","gear:Shnuggle Baby Bath","grocery:Aptamil Gold+ Infant Milk Formula Stage 1 900g","grocery:Nestlé NAN OPTIPRO Stage 1 800g","grocery:Abbott Similac Infant Milk Formula Stage 1 850g","clinic:KKH","clinic:NUH","clinic:Aglow @ United Square","clinic:Kinder Clinic (Paragon / Mount E Novena)"]);
 const H={"content-type":"application/json; charset=utf-8","cache-control":"no-store"};
 const reply=(v,status=200)=>new Response(JSON.stringify(v),{status,headers:H});
 const norm=(v,max)=>typeof v==="string"?v.trim().slice(0,max):"";
@@ -296,7 +296,7 @@ export default {async fetch(req,env){
           FROM listing_ratings
           WHERE place_key LIKE 'curated:%' OR EXISTS (
             SELECT 1 FROM recommendations r
-            WHERE r.id=substr(place_key,11) AND r.approved=1 AND r.category IN ('grocery','gear','outing') AND r.listing_subcategory IS NOT NULL
+            WHERE r.id=substr(place_key,11) AND r.approved=1 AND r.category IN ('grocery','gear','outing','clinic') AND r.listing_subcategory IS NOT NULL
           )
           GROUP BY place_key
         `).bind(hash).all();
@@ -317,7 +317,7 @@ export default {async fetch(req,env){
         const saved=await env.DB.prepare(`
           INSERT INTO listing_ratings(place_key,browser_hash,stars)
           SELECT ?,?,? FROM recommendations
-          WHERE id=? AND approved=1 AND category IN ('grocery','gear','outing') AND listing_subcategory IS NOT NULL
+          WHERE id=? AND approved=1 AND category IN ('grocery','gear','outing','clinic') AND listing_subcategory IS NOT NULL
           ON CONFLICT(place_key,browser_hash) DO UPDATE SET stars=excluded.stars
         `).bind(placeKey,hash,stars,placeKey.slice(10)).run();
         if(!saved.meta?.changes)return reply({error:"항목을 찾을 수 없습니다."},404);
@@ -376,7 +376,7 @@ export default {async fetch(req,env){
       }
       if(req.method!=="POST")return reply({error:"허용되지 않은 요청입니다."},405);
       if(!(req.headers.get("content-type")||"").startsWith("application/json"))return reply({error:"JSON 형식으로 입력해 주세요."},415);
-      const raw=await req.text();if(raw.length>3000)return reply({error:"내용이 너무 깁니다."},413);
+      const raw=await req.text();if(raw.length>243000)return reply({error:"내용 또는 사진이 너무 큽니다."},413);
       let d;try{d=JSON.parse(raw)}catch{return reply({error:"입력 형식이 올바르지 않습니다."},400)}
       if(d.website)return reply({ok:true});
       const category=norm(d.category,30),title=norm(d.title,130),nickname=norm(d.nickname,24)||"익명",body=norm(d.body,600),sentiment=norm(d.sentiment,12)||"good";
@@ -388,7 +388,7 @@ export default {async fetch(req,env){
         try{const rawImage=atob(d.photo.slice("data:image/jpeg;base64,".length));if(rawImage.length>170000||rawImage.charCodeAt(0)!==255||rawImage.charCodeAt(1)!==216||rawImage.charCodeAt(2)!==255)throw Error();}catch{return reply({error:"지원하지 않는 이미지입니다."},415)}
         photo=d.photo;
       }
-      if(!["grocery","gear","medicine"].includes(category)||title.length<2||body.length<8||!["good","neutral","bad"].includes(sentiment))return reply({error:"제품명·후기(8자 이상)·평가를 확인해 주세요."},400);
+      if(!["grocery","gear","medicine","clinic"].includes(category)||title.length<2||body.length<8||!["good","neutral","bad"].includes(sentiment))return reply({error:"제품명·후기(8자 이상)·평가를 확인해 주세요."},400);
       const id=crypto.randomUUID(),createdAt=new Date().toISOString();
       await env.DB.prepare("INSERT INTO product_reviews (id,category,product_title,nickname,body,sentiment,created_at,approved,photo_data) VALUES (?,?,?,?,?,?,?,1,?)").bind(id,category,title,nickname,body,sentiment,createdAt,photo).run();
       return reply({ok:true,id},201);
@@ -421,12 +421,12 @@ export default {async fetch(req,env){
     if(listingSubcategory&&(!Object.hasOwn(LISTING_SUBCATEGORIES,category)||!LISTING_SUBCATEGORIES[category].includes(listingSubcategory))){
       return reply({error:"등록할 세부 분류를 선택해 주세요."},400);
     }
-    if(listingSubcategory&&category==="outing"&&!LISTING_REGIONS.has(listingRegion)){
+    if(listingSubcategory&&(category==="outing"||category==="clinic"&&listingRegion)&&!LISTING_REGIONS.has(listingRegion)){
       return reply({error:"장소가 있는 지역을 선택해 주세요."},400);
     }
     if(!CATEGORIES.has(category)||title.length<2||reason.length<8||nickname.length<2)return reply({error:"카테고리·닉네임·제목·추천 이유를 확인해 주세요."},400);
     if(link){try{const u=new URL(link);if(!["https:","http:"].includes(u.protocol)||u.username||u.password)throw Error("URL")}catch{return reply({error:"정확한 웹사이트 링크를 입력해 주세요."},400)}}
-    const sub=listingSubcategory||null,region=sub&&category==="outing"?listingRegion:null;
+    const sub=listingSubcategory||null,region=sub&&["outing","clinic"].includes(category)?listingRegion||"Unknown":null;
     if(recommendationEdit){
       const id=deleteMatch[1];
       const updated=await env.DB.prepare(`
