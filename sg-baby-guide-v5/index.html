@@ -1033,6 +1033,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 .clinic-region-heading{grid-column:1 / -1;margin:12px 0 0;font-size:17px;color:#694395}
 .clinic-card-area{margin:4px 0;color:#6f5c85;font-size:13px}
 @media(prefers-color-scheme:dark){.clinic-region-heading,.clinic-card-area{color:#e2c9f8}}
+.review-fold-author{display:block;margin-bottom:4px;font-size:12px;font-weight:800}
+.review-fold-text{white-space:pre-wrap}
 </style>
 </head>
 <body>
@@ -1283,7 +1285,7 @@ function toCommunityListing(item){
  return {communityId:item.id,category:item.category,title:item.title,sub:item.listing_subcategory,
   kind:item.listing_subcategory,region:item.listing_region||'Unknown',nickname:item.nickname||'익명',
   owned:Boolean(item.owned),photo:item.has_photo?listingPhotoUrl(item.id):'',
-  url:item.url,desc:item.reason,status:item.category==='outing'?'good':undefined,icon:item.category==='grocery'?'🛒':'🧸'};
+  url:item.url,desc:'',review:item.reason,status:item.category==='outing'?'good':undefined,icon:item.category==='grocery'?'🛒':'🧸'};
 }
 async function refreshDirectory(category){
  const request=++directoryRequest;
@@ -1328,7 +1330,7 @@ function openListingDialog(category='',entry=null){
  $('#removeListingPhoto').hidden=!hasPhoto;
  form.elements.namedItem('remove_photo').disabled=!hasPhoto;
  if(entry){
-  const values={title:entry.title,url:entry.url,nickname:entry.nickname,reason:entry.reason||entry.desc,
+  const values={title:entry.title,url:entry.url,nickname:entry.nickname,reason:entry.reason??entry.review,
    listing_subcategory:entry.listing_subcategory||entry.sub,listing_region:entry.listing_region||entry.region};
   for(const [name,value] of Object.entries(values))if(value!=null)form.elements.namedItem(name).value=value;
  }
@@ -1428,14 +1430,19 @@ function ageMatch(x){if(x.category==='outing')return state.outingMonth===null||(
 function filterRecords(){return getSubset().filter(x=>{let needle=(x.title+' '+x.desc+' '+x.review+' '+x.sub+' '+(x.address||'')).toLowerCase();return (state.sub==='전체'||x.sub===state.sub)&&ageMatch(x)&&(state.region==='All'||x.region===state.region)&&(state.kind==='전체'||x.kind===state.kind)&&(state.rating==='전체'||x.status===state.rating)&&(!state.search||needle.includes(state.search.toLowerCase()))}).sort((a,b)=>Number(Boolean(b.photo))-Number(Boolean(a.photo)))}
 function imageMarkup(x){return x.photo?`<img src="${e(x.photo)}" alt="${e(x.title)} 제품 또는 장소 사진" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><div class="fallback" style="display:none">${x.icon||'🧸'}<span>이미지 준비 중</span></div>`:`<div class="fallback">${x.icon||'🧸'}<span>이미지 준비 중</span></div>`}
 
+function reviewFold(item,label){
+ if(!item.review)return '';
+ const author=item.communityId?'<strong class="review-fold-author">'+e(item.nickname||'익명')+'</strong>':'';
+ return '<details class="review-fold"><summary>'+e(label)+'</summary><div class="review">'+author+'<div class="review-fold-text">'+e(item.review)+'</div></div></details>';
+}
 function cardHTML(x){
  const badge=x.status==='bad'?'비추천':x.status==='good'?'추천':'';
  const label=(x.category==='medicine'?'약품':x.category==='grocery'?'먹거리':x.category==='gear'?'육아용품':'정보');
  const top='<div class="subline">'+e(x.sub||label)+(x.category==='gear'?' · '+e((x.age||[]).filter(a=>a!=='parents').map(a=>labels[a]||a).join(' · ')):'')+'</div>';
  const visual=x.category==='living'&&!x.photo?'':'<div class="visual">'+imageMarkup(x)+(badge?'<span class="flag '+(x.status==='bad'?'bad':'')+'">'+badge+'</span>':'')+'</div>';
- const community=x.communityId?'<small class="source-note">이웃이 추가했어요 · '+e(x.nickname)+'</small>':'';
  const photoSource=x.photoCaption?'<small class="official-photo-note">'+e(x.photoCaption)+'</small>':'';
- const review=x.review?'<details class="review-fold"><summary>이용 후기 보기</summary><div class="review">'+e(x.review)+'</div></details>':'';
+ const review=reviewFold(x,'이용 후기 보기');
+ const description=x.desc?'<p>'+e(x.desc)+'</p>':'';
  const canReview=['grocery','gear','medicine','clinic'].includes(x.category);
  const clinic=x.category==='clinic';
  const clinicArea=clinic?'<div class="clinic-card-area">📍 '+e(x.clinicArea||CLINIC_REGIONS[x.region]||CLINIC_REGIONS.Unknown)+'</div>':'';
@@ -1455,7 +1462,7 @@ function cardHTML(x){
  +'<button type="submit">후기 등록</button><span class="product-review-status" aria-live="polite"></span></form>'
  +'<small class="product-review-privacy">후기는 다른 방문자에게 공개됩니다. 아이 이름이나 개인정보는 작성하지 마세요.</small></div></details>':'';
 
- return '<article class="product '+(x.category==='living'&&!x.photo?'living-text-only':'')+'">'+visual+'<div class="product-body">'+top+'<h3>'+e(x.title)+'</h3>'+clinicArea+'<p>'+e(x.desc||'')+'</p>'+warning+reviewMeter+listingRatingHTML(x)+community+photoSource+review+productReviews+link+recommendationActions(x)+'</div></article>';
+ return '<article class="product '+(x.category==='living'&&!x.photo?'living-text-only':'')+'">'+visual+'<div class="product-body">'+top+'<h3>'+e(x.title)+'</h3>'+clinicArea+description+warning+reviewMeter+listingRatingHTML(x)+photoSource+review+productReviews+link+recommendationActions(x)+'</div></article>';
 }
 
 
@@ -1538,13 +1545,13 @@ function renderPlaces(){
 
 function locationHTML(x,n){
  const ageLabel=x.minAge==null?'':'<span class="age-badge '+(x.status==='bad'?'bad':'')+'">👶 '+(x.status==='bad'?'월령 참고 ':'추천 월령 ')+x.minAge+'M+</span>';
- const community=x.communityId?'<small class="source-note">이웃이 추가했어요 · '+e(x.nickname)+'</small>':'';
  const address=x.address||'위치는 상세 안내에서 확인하세요';
- const summary=x.desc||x.review||'방문 경험을 참고해 보세요';
- const review=x.review?'<details class="review-fold"><summary>방문 후기 보기</summary><div class="review">'+e(x.review)+'</div></details>':'';
+ const summary=x.desc||(!x.communityId?(x.review||'방문 경험을 참고해 보세요'):'');
+ const description=summary?'<div class="short">'+e(summary)+'</div>':'';
+ const review=reviewFold(x,'방문 후기 보기');
  const links=(x.url?'<a href="'+e(x.url)+'" target="_blank" rel="noopener noreferrer">시설 안내 ↗</a>':'')+((n||x.communityId)?'<a href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(x.title+', '+(x.communityId?'Singapore':address))+'" target="_blank" rel="noopener noreferrer">길찾기 ↗</a>':'');
  const photo=x.photo?'<img class="place-thumb" src="'+e(x.photo)+'" loading="lazy" alt="'+e(x.title)+' 사진" onerror="this.remove()">':'';
- return '<article class="location"><span class="num '+(x.status==='bad'?'bad':'')+'">'+(n||'—')+'</span><div class="location-body"><h3>'+e(x.title)+'</h3><div class="meta">'+e(regionNames[x.region]||x.region)+' · '+e(x.kind||'장소')+(x.status==='bad'?' · 비추천 의견':'')+'</div>'+ageLabel+'<div class="short">'+e(summary)+'</div>'+community+listingRatingHTML(x)+review+'<p>'+e(address)+'</p><div class="location-links">'+links+'</div>'+recommendationActions(x)+'</div>'+photo+'</article>';
+ return '<article class="location"><span class="num '+(x.status==='bad'?'bad':'')+'">'+(n||'—')+'</span><div class="location-body"><h3>'+e(x.title)+'</h3><div class="meta">'+e(regionNames[x.region]||x.region)+' · '+e(x.kind||'장소')+(x.status==='bad'?' · 비추천 의견':'')+'</div>'+ageLabel+description+listingRatingHTML(x)+review+'<p>'+e(address)+'</p><div class="location-links">'+links+'</div>'+recommendationActions(x)+'</div>'+photo+'</article>';
 }
 
 const MONTHLY_FRUITS={
