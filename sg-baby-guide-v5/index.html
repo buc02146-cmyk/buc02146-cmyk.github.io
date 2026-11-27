@@ -242,7 +242,45 @@ a{color:var(--sage);text-decoration:none}.hide{display:none!important}
 @media(max-width:600px){.home-playdate{padding:17px}.home-playdate-head{flex-wrap:wrap}.home-playdate h2{font-size:22px}.home-playdate-grid,.recent-grid{grid-template-columns:1fr}.compare-products{grid-template-columns:1fr 1fr}.compare-product{padding:10px}.compare-product img{height:92px}.compare-product h4{font-size:13px}.playdate-formbox,.playdate-listbox,.compare-wrap{padding:16px}}
 .product-review-form .photo-consent{display:flex;flex-direction:row;align-items:flex-start;gap:8px;line-height:1.6;font-weight:500;font-size:11px;color:#819181}
 .product-review-form .photo-consent input{width:auto;flex:0 0 auto;margin-top:3px;accent-color:#668e70}
-.search-group-label{display:block;color:#6f9376;font-size:11px;font-weight:800;margin:14px 2px 7px}.global-results>div{display:grid;gap:6px}.recent-review-photo{width:100%;max-height:145px;object-fit:contain;border-radius:10px;background:#f6f9f6;margin-top:9px}</style>
+.search-group-label{display:block;color:#6f9376;font-size:11px;font-weight:800;margin:14px 2px 7px}.global-results>div{display:grid;gap:6px}.recent-review-photo{width:100%;max-height:145px;object-fit:contain;border-radius:10px;background:#f6f9f6;margin-top:9px}
+/* Playful Marina Bay Sands greeting with safe spacing and gentle motion */
+.homeLanding .hero-art-interactive{position:relative;cursor:pointer;outline-offset:6px;touch-action:manipulation;user-select:none;overflow:visible}
+.homeLanding .hero-art-interactive svg{transform-origin:50% 73%;will-change:transform;filter:drop-shadow(0 9px 10px rgba(55,91,69,.045))}
+.homeLanding .hero-art-interactive.is-bouncing svg{animation:hero-twinkle-bounce 950ms cubic-bezier(.25,.85,.32,1) both}
+@keyframes hero-twinkle-bounce{
+  0%{transform:translateY(0) scale(1)}
+  14%{transform:translateY(6px) scale(.90,1.04)}
+  35%{transform:translateY(-15px) scale(1.13,.91)}
+  53%{transform:translateY(-6px) scale(1.045,1.035)}
+  74%{transform:translateY(1px) scale(.975,1.015)}
+  100%{transform:translateY(0) scale(1)}
+}
+.homeLanding .hero-speech{position:absolute;right:-2%;top:-8%;z-index:2;max-width:180px;padding:11px 16px;color:#3d6850;background:#fffefa;border:1px solid #d8e8d9;border-radius:21px 21px 7px 21px;box-shadow:0 8px 24px rgba(45,82,58,.10);font-weight:800;font-size:15px;line-height:1.35;letter-spacing:-.025em;white-space:nowrap;pointer-events:none;opacity:0;transform:translateY(12px) scale(.82);transition:opacity .22s,transform .3s cubic-bezier(.2,1.2,.4,1)}
+.homeLanding .hero-speech.is-visible{opacity:1;transform:translateY(0) scale(1)}
+.homeLanding .hero-speech::after{content:'';position:absolute;right:26px;bottom:-9px;width:15px;height:15px;background:#fffefa;border-right:1px solid #d8e8d9;border-bottom:1px solid #d8e8d9;transform:rotate(45deg)}
+.homeLanding .hero-heart{position:absolute;color:#ec99a5;font-size:22px;line-height:1;left:53%;bottom:35%;z-index:3;opacity:0;pointer-events:none;text-shadow:0 2px 4px rgba(229,134,153,.12)}
+.homeLanding .hero-heart-two{left:65%;bottom:50%;font-size:15px;color:#f3b1ba}
+.homeLanding .hero-heart-three{left:38%;bottom:49%;font-size:17px;color:#e8a1b0}
+.homeLanding .hero-art-interactive.show-hearts .hero-heart-one{animation:hero-heart-pop 1.2s ease-out both}
+.homeLanding .hero-art-interactive.show-hearts .hero-heart-two{animation:hero-heart-pop 1.2s .13s ease-out both}
+.homeLanding .hero-art-interactive.show-hearts .hero-heart-three{animation:hero-heart-pop 1.2s .25s ease-out both}
+@keyframes hero-heart-pop{0%{opacity:0;transform:translateY(12px) scale(.4) rotate(-12deg)}18%{opacity:1;transform:translateY(-8px) scale(1.1) rotate(8deg)}65%{opacity:.9;transform:translateY(-38px) scale(1)}100%{opacity:0;transform:translateY(-64px) scale(.73) rotate(12deg)}}
+.homeLanding .hero-art-interactive:focus-visible{border-radius:16px;outline:3px solid #79ad88}
+@media(max-width:760px){
+  .homeLanding .hero-speech{right:-5px;top:-17px;padding:7px 10px;font-size:11px;border-radius:14px 14px 5px 14px}
+  .homeLanding .hero-speech::after{right:16px;width:10px;height:10px;bottom:-6px}
+  .homeLanding .hero-heart{font-size:15px}
+}
+@media(max-width:520px){
+  .homeLanding .hero-speech{top:4px;right:30%;font-size:12px;max-width:160px}
+  .homeLanding .hero-art-interactive{margin:-5px 0 -15px}
+}
+@media(prefers-reduced-motion:reduce){
+  .homeLanding .hero-art-interactive.is-bouncing svg,.homeLanding .hero-art-interactive.show-hearts .hero-heart{animation:none!important}
+  .homeLanding .hero-art-interactive svg,.homeLanding .hero-speech{transition:none!important}
+  .homeLanding .hero-art-interactive.show-hearts .hero-heart{opacity:0}
+}
+</style>
 </head>
 <body>
 
@@ -256,7 +294,11 @@ a{color:var(--sage);text-decoration:none}.hide{display:none!important}
     <p>장보기부터 병원, 교육, 아이와의 나들이까지.<br class="hero-desktop-break"> 우리 가족에게 필요한 정보만 골라보세요.</p>
     <div class="hero-tagline"><span>🌿</span> 아이와 함께하는 싱가포르 생활</div>
   </div>
-  <div class="hero-art" aria-hidden="true">
+  <div class="hero-art hero-art-interactive" id="heroAnimation" aria-label="마리나 베이 샌즈 일러스트. 누르면 환영 메시지가 나타납니다." role="button" tabindex="0">
+    <div class="hero-speech" id="heroSpeech" aria-hidden="true">안녕하세요~ 👋</div>
+    <div class="hero-heart hero-heart-one" aria-hidden="true">♥</div>
+    <div class="hero-heart hero-heart-two" aria-hidden="true">♥</div>
+    <div class="hero-heart hero-heart-three" aria-hidden="true">♥</div>
     <svg viewBox="0 0 360 246" xmlns="http://www.w3.org/2000/svg" focusable="false">
       <ellipse cx="181" cy="217" rx="154" ry="17" fill="#c8ddd0" opacity=".65"/>
       <circle cx="182" cy="114" r="102" fill="#e0eee8"/>
@@ -863,6 +905,36 @@ function mountHomeWidgets(){
  refreshReviewSummaries();
 }
 
-mountCats();mountHomeWidgets();if(['grocery','clinic','medicine','gear','outing','preschool','fruit','living','prep','benefit','recommendations','playdate','compare'].includes(location.hash.slice(1)))openCategory(location.hash.slice(1));
+
+function initHeroGreeting(){
+ const art=document.querySelector('#heroAnimation'),speech=document.querySelector('#heroSpeech');
+ if(!art||!speech)return;
+ const phrases=['환영해요! 🌿','안녕하세요~ 👋','오늘도 좋은 하루!','우리 함께 놀아요 🧸','반가워요! 💚','싱가포르 육아 파이팅!'];
+ const reduceMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true;
+ let count=0,clearSpeech=0,clearEffects=0,interval=0;
+ const greet=()=>{
+  if(document.hidden||!art.isConnected)return;
+  art.classList.remove('is-bouncing','show-hearts');
+  void art.offsetWidth;
+  speech.textContent=phrases[count%phrases.length];count++;
+  speech.classList.add('is-visible');
+  if(!reduceMotion){
+   art.classList.add('is-bouncing');
+   if(count%3===0)art.classList.add('show-hearts');
+  }
+  window.clearTimeout(clearSpeech);
+  window.clearTimeout(clearEffects);
+  clearEffects=window.setTimeout(()=>art.classList.remove('is-bouncing','show-hearts'),1600);
+  clearSpeech=window.setTimeout(()=>speech.classList.remove('is-visible'),2400);
+ };
+ art.addEventListener('click',greet);
+ art.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();greet();}});
+ // One introductory greeting, then gentle occasional animations only while visible.
+ window.setTimeout(greet,700);
+ if(!reduceMotion)interval=window.setInterval(greet,12000);
+ document.addEventListener('visibilitychange',()=>{if(document.hidden){speech.classList.remove('is-visible');art.classList.remove('is-bouncing','show-hearts');}});
+}
+
+mountCats();mountHomeWidgets();initHeroGreeting();if(['grocery','clinic','medicine','gear','outing','preschool','fruit','living','prep','benefit','recommendations','playdate','compare'].includes(location.hash.slice(1)))openCategory(location.hash.slice(1));
 </script>
 </body></html>
