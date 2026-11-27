@@ -941,8 +941,14 @@ async function fetchPlaydates(){
 }
 function playdateCard(p,home=false){
  const href='https://open.kakao.com/o/gKHZMCYi';
- if(home)return '<button type="button" class="home-playdate-teaser" data-playdate-open="1"><strong>'+e(p.place)+'</strong><small>📅 '+e(dateLabel(p.starts_at))+'</small><small>👶 '+p.min_month+'–'+p.max_month+'M · '+e(p.region)+'</small></button>';
- return '<article class="playdate-item"><h4>📍 '+e(p.place)+'</h4><div class="playdate-pills"><span>📅 '+e(dateLabel(p.starts_at))+'</span><span>👶 '+p.min_month+'–'+p.max_month+'M</span><span>👥 '+p.capacity+'명</span><span>'+e(p.region)+'</span></div><p>☕ '+e(p.details)+'</p>'+(p.notes?'<small>💬 '+e(p.notes)+'</small>':'')+'<p style="font-size:11px;color:#85968a;margin:9px 0 0">작성자 · '+e(p.nickname)+'</p><div class="playdate-actions"><a href="'+href+'" target="_blank" rel="noopener noreferrer">카톡에서 참여 문의 ↗</a><button type="button" class="playdate-copy" data-id="'+e(p.id)+'">모집글 복사</button><button type="button" class="playdate-remove" data-id="'+e(p.id)+'">관리자 삭제</button></div></article>';
+ const filled=Math.max(1,Number(p.joined_count||1)),cap=Math.max(2,Number(p.capacity||2)),full=filled>=cap;
+ if(home)return '<button type="button" class="home-playdate-teaser" data-playdate-open="1"><strong>'+e(p.place)+'</strong><small>📅 '+e(dateLabel(p.starts_at))+'</small><small>👶 '+p.min_month+'–'+p.max_month+'M · '+e(p.region)+'</small><small class="playdate-small-count">'+(full?'모집 마감':filled+'/'+cap+'명 모집 중')+'</small></button>';
+ const names=(p.participants||[]).map(x=>'<span class="participant-name">'+e(x)+'</span>').join('');
+ return '<article class="playdate-item"><h4>📍 '+e(p.place)+'</h4><div class="playdate-pills"><span>📅 '+e(dateLabel(p.starts_at))+'</span><span>👶 '+p.min_month+'–'+p.max_month+'M</span><span>👥 '+filled+'/'+cap+'명'+(full?' · 모집 마감':' · 모집 중')+'</span><span>'+e(p.region)+'</span></div>'
+  +'<p>☕ '+e(p.details)+'</p>'+(p.notes?'<small>💬 '+e(p.notes)+'</small>':'')
+  +'<p class="playdate-host">모임장 · '+e(p.nickname)+'</p>'
+  +'<div class="playdate-attendees"><b>참여 신청 '+Math.max(0,filled-1)+'명</b><div class="attendee-names">'+(names||'<small>첫 참여자를 기다리고 있어요.</small>')+'</div></div>'
+  +'<div class="playdate-actions"><button type="button" class="playdate-join" data-id="'+e(p.id)+'" '+(full?'disabled':'')+'>'+(full?'모집 마감':'💜 참여하기')+'</button><a href="'+href+'" target="_blank" rel="noopener noreferrer">카카오톡 문의 ↗</a><button type="button" class="playdate-copy" data-id="'+e(p.id)+'">모집글 복사</button><button type="button" class="playdate-remove" data-id="'+e(p.id)+'">관리자 삭제</button></div></article>';
 }
 async function showPlaydateHome(){
  const el=document.querySelector('#homePlaydateList');if(!el)return;
@@ -959,6 +965,20 @@ function showPlaydatePosts(){
  const m=mon==='all'?null:Number(mon);
  const list=playdateCache.filter(p=>(region==='All'||region===p.region)&&(m===null||(p.min_month<=m&&p.max_month>=m)));
  wrap.innerHTML=list.map(p=>playdateCard(p)).join('')||'<div class="empty">현재 조건에 맞는 플레이데이트가 없습니다. 직접 모임을 열어 보세요.</div>';
+ wrap.querySelectorAll('.playdate-join').forEach(btn=>btn.onclick=async()=>{
+  const p=playdateCache.find(x=>x.id===btn.dataset.id);if(!p)return;
+  const name=window.prompt('플레이데이트에 참여할 닉네임을 입력해 주세요.\n신청자 목록에 공개됩니다.');
+  if(name===null)return;
+  const nickname=name.trim().replace(/\s+/g,' ');
+  if(nickname.length<2||nickname.length>24){window.alert('닉네임은 2~24자로 입력해 주세요.');return;}
+  btn.disabled=true;btn.textContent='신청 중…';
+  try{
+   const res=await fetch('/api/playdates/'+encodeURIComponent(p.id)+'/join',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({nickname})});
+   const out=await res.json();if(!res.ok)throw Error(out.error||'참여 신청을 완료하지 못했습니다.');
+   await fetchPlaydates();showPlaydatePosts();showPlaydateHome();
+   window.alert('참여 신청이 등록되었습니다! 모임장과 세부 조율은 카카오톡 오픈채팅에서 진행해 주세요.');
+  }catch(err){window.alert(err.message);btn.disabled=false;btn.textContent='💜 참여하기';}
+ });
  wrap.querySelectorAll('.playdate-copy').forEach(btn=>btn.onclick=async()=>{
   const p=playdateCache.find(x=>x.id===btn.dataset.id);if(!p)return;
   const msg='🧸 플레이데이트 모집\n\n📍 장소: '+p.place+'\n📅 날짜 및 시간: '+dateLabel(p.starts_at)+'\n👶 아이 월령: '+p.min_month+'–'+p.max_month+'개월\n👥 모집 인원: '+p.capacity+'명\n☕ 모임 내용: '+p.details+'\n💬 기타 사항: '+(p.notes||'-');
@@ -974,7 +994,7 @@ async function renderPlaydates(){
  const root=document.querySelector('#playdatePanel');if(!root)return;
  const monthOptions=Array.from({length:61},(_,i)=>'<option value="'+i+'">'+i+'M</option>').join('');
  const regionOptions=PLAYDATE_REGIONS.filter(([v])=>v!=='All').map(([v,n])=>'<option value="'+v+'">'+n+'</option>').join('');
- root.innerHTML='<div class="playdate-layout"><section class="playdate-formbox"><h3>🧸 플레이데이트 모집하기</h3><p class="source-note">채팅방의 플데양식과 동일한 항목으로 모임을 등록할 수 있어요. 참여 문의는 카카오톡에서 진행합니다.</p><form class="playdate-form" id="playdateForm">'
+ root.innerHTML='<div class="playdate-layout"><section class="playdate-formbox"><h3>🧸 플레이데이트 모집하기</h3><p class="source-note">채팅방의 플데양식과 동일한 항목으로 모임을 등록할 수 있어요. 홈페이지에서 닉네임으로 참여 신청하고, 세부 소통은 카카오톡에서 진행합니다.</p><form class="playdate-form" id="playdateForm">'
  +'<label>닉네임<input name="nickname" maxlength="24" minlength="2" required placeholder="예: 토끼맘"></label>'
  +'<label>📍 장소<input name="place" maxlength="110" required placeholder="예: West Coast Park"></label>'
  +'<label>지역<select name="region">'+regionOptions+'</select></label>'
