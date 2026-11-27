@@ -63,22 +63,27 @@ function renderContent(){const cat=state.category;$('#prepPanel').classList.togg
 function oldRenderFruits(){const max={'all':90,'parents':90,'0-6m':5,'6-12m':11,'12-24m':23,'24m+':90}[state.age];const arr=DATA.fruit.filter(x=>x.minAge<=max&&(x.title+x.text+x.fruit.join(' ')).toLowerCase().includes(state.search.toLowerCase()));$('#fruits').innerHTML=arr.map(x=>`<div class="fruit"><h3>${e(x.title)}</h3><div class="icons">${x.fruit.map(f=>`<span title="${e(f)}">${e(f.split(' ')[0])}</span>`).join('')}</div><p>${e(x.fruit.map(f=>f.split(' ').slice(1).join(' ')).join(' · '))}</p><p>${e(x.text)}</p></div>`).join('')||'<div class="empty">해당 월령의 과일 정보가 없어요.</div>';$('#disclaimer').textContent='특정 과일별로 절대적인 시작 월령이 정해져 있지는 않습니다. 이유식 준비 상태와 질식 위험에 맞춰 제공하세요.';}
 function initMap(){if(map)return;if(!window.L){$('#map').classList.add('hide');$('#mapFallback').classList.remove('hide');return;}$('#map').classList.remove('hide');$('#mapFallback').classList.add('hide');map=L.map('map',{scrollWheelZoom:false}).setView([1.333,103.84],11);const tiles=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap'}).addTo(map);let errs=0;tiles.on('tileerror',()=>{if(++errs>=4){$('#map').classList.add('hide');$('#mapFallback').classList.remove('hide')}});markerLayer=L.layerGroup().addTo(map)}
 function renderPlaces(){
- const all=filterRecords();
- const places=all.filter(p=>p.lat!=null&&p.lng!=null);
- const unknown=all.filter(p=>p.lat==null||p.lng==null);
- $('#locations').innerHTML=(places.map((p,i)=>locationHTML(p,i+1))+unknown.map(p=>locationHTML(p,null))).join('')||'<div class="empty">조건에 맞는 장소가 없어요.</div>';
- const colors={West:'#dac9f4',North:'#f9e6ad',Central:'#ffcbd8',East:'#c1e6f7',South:'#d5edbb'};
- const areas=[
- ['West','M32 145 L115 104 L208 125 L228 187 L143 226 L60 209 Z',130,167],
- ['North','M166 110 L268 54 L382 84 L396 136 L312 163 L211 137 Z',278,110],
- ['Central','M222 147 L312 150 L384 143 L411 201 L330 228 L234 197 Z',314,185],
- ['East','M389 126 L463 97 L566 116 L614 157 L559 203 L411 194 Z',503,157],
- ['South','M265 215 L332 218 L402 212 L421 244 L342 272 L261 246 Z',337,242]
- ];
+ const entries=filterRecords(),mapped=entries.filter(x=>x.lat!=null&&x.lng!=null),other=entries.filter(x=>x.lat==null||x.lng==null);
+ $('#locations').innerHTML=(mapped.map((x,i)=>locationHTML(x,i+1))+other.map(x=>locationHTML(x,null))).join('')||'<div class="empty">이 지역과 월령에 맞는 장소가 없습니다.</div>';
  $('#map').classList.remove('hide');$('#mapFallback').classList.add('hide');
- $('#map').innerHTML='<div class="illustration-title">🌴 싱가포르 지역을 눌러보세요</div><svg class="sg-map-svg" viewBox="0 0 650 300" role="group" aria-label="싱가포르 권역 선택 지도"><rect width="650" height="300" rx="20" fill="#f3f9f5"/><text x="35" y="50" font-size="20">🌴</text><text x="560" y="85" font-size="22">🌺</text><text x="44" y="265" font-size="22">🌊</text>'+areas.map(([k,d,x,y])=>'<g data-zone="'+k+'" tabindex="0" role="button" aria-label="'+k+' 선택"><path d="'+d+'" fill="'+colors[k]+'" stroke="'+(state.region===k?'#547b61':'white')+'" stroke-width="'+(state.region===k?7:5)+'" stroke-linejoin="round"/><text x="'+x+'" y="'+y+'" text-anchor="middle" font-family="Jua" font-size="20" fill="#455a4c">'+k+'</text></g>').join('')+'</svg><div class="map-controls"><button class="'+(state.region==='All'?'on':'')+'" data-zone="All">전체</button>'+areas.map(([k])=>'<button class="'+(state.region===k?'on':'')+'" data-zone="'+k+'">'+k+'</button>').join('')+'</div>';
- document.querySelectorAll('#map [data-zone]').forEach(el=>{function activate(){state.region=el.dataset.zone;const sel=$('#region');if(sel)sel.value=state.region;renderPlaces()}el.addEventListener('click',activate);el.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();activate()}})});
- $('#disclaimer').textContent='지역 지도는 권역을 선택하기 위한 그림입니다. 정확한 위치는 각 장소의 길찾기에서 확인해 주세요.';
+ const shape=[
+ ["West","M 48 156 C 71 130,96 120,123 100 C 155 96,177 116,203 112 C 223 129,230 155,230 175 C 214 197,177 203,159 227 C 129 242,86 228,58 209 C 29 192,25 174,48 156 Z",148,169,"#d6c1ed"],
+ ["North","M 191 116 C 199 92,231 81,263 68 C 300 45,357 63,383 91 C 408 116,399 137,382 151 C 352 155,325 146,296 160 C 269 143,235 152,208 141 Z",298,113,"#f6db8a"],
+ ["Central","M 215 169 C 244 145,267 139,298 159 C 323 151,353 140,381 155 C 400 168,424 186,410 211 C 381 233,353 223,327 231 C 296 212,267 230,244 208 C 228 202,211 187,215 169 Z",311,187,"#f7bfd1"],
+ ["East","M 387 136 C 416 102,454 96,487 104 C 515 83,543 96,574 120 C 602 136,619 163,601 190 C 579 217,539 211,518 234 C 490 242,467 215,434 219 C 423 192,404 170,387 136 Z",508,170,"#b9e0f1"],
+ ["South","M 233 230 C 260 217,284 220,314 235 C 341 227,365 225,390 238 C 403 255,382 268,355 277 C 325 286,299 278,279 269 C 254 272,237 261,233 230 Z",316,258,"#cde7ac"]
+ ];
+ const isAll=state.region==='All';
+ const svg='<svg viewBox="0 0 650 315" class="sg-map-svg" role="group" aria-label="싱가포르 지역 선택 지도">'
+ +'<rect width="650" height="315" rx="28" fill="#f5faf6"/><text x="22" y="45" font-size="27">🌴</text><text x="575" y="66" font-size="27">🌴</text><text x="45" y="283" font-size="24">🌊</text><text x="577" y="277" font-size="25">🦁</text>'
+ +shape.map(([name,d,x,y,color])=>{const fade=!isAll&&state.region!==name;return '<g tabindex="0" role="button" aria-label="'+name+' 지역 보기" data-zone="'+name+'" class="region-outline" opacity="'+(fade?'0.22':'1')+'"><path d="'+d+'" fill="'+color+'" stroke="'+(state.region===name?'#638f72':'white')+'" stroke-width="'+(state.region===name?6:4)+'"/><circle cx="'+x+'" cy="'+(y-18)+'" r="12" fill="#fff" fill-opacity=".75"/><path d="M'+x+' '+(y-26)+'a7 7 0 0 0 -7 7c0 5 7 14 7 14s7-9 7-14a7 7 0 0 0 -7-7z" fill="#677e69"/><circle cx="'+x+'" cy="'+(y-19)+'" r="2.5" fill="#fff"/><text x="'+x+'" y="'+(y+17)+'" text-anchor="middle" font-size="18" font-weight="800" font-family="GuideRound, sans-serif" fill="#354c40">'+name+'</text></g>'}).join('')+'</svg>';
+ $('#map').innerHTML='<div class="illustration-title">🗺️ 지역별 가볼 만한 곳</div>'+svg+'<div class="map-controls"><button data-zone="All" class="'+(isAll?'on':'')+'">전체</button>'+shape.map(([name])=>'<button data-zone="'+name+'" class="'+(state.region===name?'on':'')+'">'+name+'</button>').join('')+'</div><div class="map-tip">지역을 누르면 해당 권역만 선명해지고 아래 추천 장소가 바뀝니다.</div>';
+ document.querySelectorAll('#map [data-zone]').forEach(el=>{
+   const choose=()=>{state.region=el.dataset.zone;const sel=$('#region');if(sel)sel.value=state.region;renderPlaces()};
+   el.addEventListener('click',choose);
+   el.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();choose()}});
+ });
+ $('#disclaimer').textContent='권역은 편의를 위한 그림입니다. 정확한 주소는 각 장소의 길찾기를 이용해 확인하세요.';
 }
 function locationHTML(x,n){const address=x.address||'위치 확인 필요',desc=x.short||x.review||x.desc;return `<article class="location">${n?`<span class="num ${x.status==='bad'?'bad':''}">${n}</span>`:'<span class="num bad">?</span>'}<div class="location-body"><h3>${e(x.title)}</h3><div class="meta">${e(regionNames[x.region]||x.region)} · ${e(x.kind||'장소')} · ${e(x.minAge||'0')}개월+ 추천 ${x.status==='bad'?'· 비추천 후기':''}</div><p>${e(address)}</p><div class="short">${e(desc)}</div><div class="location-links">${x.url?`<a href="${e(x.url)}" target="_blank" rel="noopener noreferrer">시설 정보 ↗</a>`:''}${n?`<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(x.title+', '+address)}" target="_blank" rel="noopener noreferrer">길찾기 ↗</a>`:''}</div></div>${x.photo?`<img class="place-thumb" loading="lazy" src="${e(x.photo)}" alt="${e(x.title)} 사진" referrerpolicy="no-referrer" onerror="this.remove()">`:''}</article>`}
 
@@ -100,12 +105,35 @@ const MONTHLY_FRUITS={
 for(let m=19;m<=24;m++)MONTHLY_FRUITS[m]={names:['바나나','사과','딸기','키위','망고','배','수박','포도'],tip:'새로 먹어도 되는 과일이 월령마다 따로 정해진 것은 아니에요. 다양한 과일을 균형 있게 제공하고 씹는 능력에 맞춰 크기를 조절하세요.',warnings:['포도·체리처럼 둥근 과일은 계속 잘라 주세요.','딱딱한 과일과 씨는 질식 위험이 있어요.']};
 const FRUIT_EMOJI={'바나나':'🍌','사과':'🍎','배':'🍐','아보카도':'🥑','망고':'🥭','딸기':'🍓','복숭아':'🍑','블루베리':'🫐','키위':'🥝','파파야':'🍈','멜론':'🍈','용과':'🐉','귤':'🍊','수박':'🍉','포도':'🍇','체리':'🍒','자두':'🍑'};
 let monthSelected=6;
+const FRUIT_PREP={
+'바나나':['껍질을 벗겨 잘 익은 과육을 으깨거나 길쭉하고 부드러운 조각으로 제공하세요.','덜 익어 단단한 조각은 피하세요.'],
+'사과':['처음에는 껍질을 벗겨 찌고 으깨세요. 씹기 능력이 자라면 매우 얇은 조각으로 제공하세요.','생사과의 단단한 큐브·두꺼운 조각은 질식 위험이 있습니다.'],
+'배':['초기에는 찌거나 곱게 갈아 제공하세요. 이후에는 아주 부드럽고 얇게 썰어주세요.','단단하고 미끄러운 덩어리는 피하세요.'],
+'아보카도':['잘 익은 과육을 으깨거나 잡기 쉬운 부드러운 조각으로 제공하세요.','크고 미끄러운 덩어리는 먹기 어려울 수 있습니다.'],
+'망고':['잘 익은 과육을 섬유질 방향에 맞춰 얇게 썰거나 으깨세요.','씨와 질긴 섬유질, 껍질은 제거하세요.'],
+'딸기':['꼭지를 떼고 충분히 으깨거나 크기에 따라 길게 잘라주세요.','작은 통딸기나 둥근 모양으로 제공하지 마세요.'],
+'복숭아':['씨·껍질을 제거하고 잘 익은 과육을 얇게 썰거나 으깨세요.','씨 주변의 단단한 부분은 피하고 알레르기 증상도 관찰하세요.'],
+'블루베리':['통째로 주지 말고 손가락으로 납작하게 눌러 으깨거나 잘게 자르세요.','동그란 통블루베리는 질식 위험이 있습니다.'],
+'키위':['껍질을 벗겨 잘 익은 과육을 작은 부드러운 조각으로 제공하세요.','산도 때문에 입가가 붉어질 수 있습니다. 부기·호흡곤란 등은 알레르기 신호일 수 있어요.'],
+'파파야':['껍질과 씨를 제거하고 익은 과육을 으깨거나 얇게 썰어주세요.','씨는 완전히 제거하세요.'],
+'멜론':['껍질·씨를 제거하고 충분히 익은 부드러운 부분을 얇게 썰어주세요.','멜론볼·단단하고 둥근 덩어리는 피하세요.'],
+'용과':['껍질을 벗겨 잘 익은 과육을 으깨거나 작은 부드러운 조각으로 제공하세요.','매우 미끄러울 수 있어 한 번에 큰 덩어리를 주지 마세요.'],
+'귤':['껍질과 씨, 질긴 속껍질을 필요에 따라 제거해 잘게 나눠주세요.','산도 때문에 입 주변이 자극받을 수 있습니다.'],
+'수박':['씨와 두꺼운 껍질을 제거하고 작고 부드러운 조각으로 제공하세요.','미끄러운 큰 조각과 씨에 주의하세요.'],
+'포도':['씨를 제거한 뒤 세로로 4등분하고 필요하면 더 잘게 자르세요.','통포도·가로로 반만 자른 포도는 질식 위험이 큽니다.'],
+'체리':['꼭지와 씨를 완전히 제거하고 작게 자르거나 으깨세요.','씨가 남거나 둥근 통째인 체리는 위험합니다.'],
+'자두':['씨를 완전히 제거하고 잘 익은 과육을 얇게 잘라주세요.','껍질과 단단한 과육은 씹는 능력에 맞춰 처리하세요.']
+};
+function fruitInfo(name){return FRUIT_PREP[name]||['잘 익은 과육을 씹는 능력에 맞춰 부드럽고 안전한 모양으로 제공하세요.','단단하고 둥근 조각, 씨와 질긴 껍질에 주의하세요.']}
 function renderFruits(){
- const m=monthSelected, f=MONTHLY_FRUITS[m];
- $('#fruits').innerHTML=`<div style="grid-column:1/-1"><div class="monthbar">${Array.from({length:19},(_,i)=>i+6).map(n=>`<button type="button" class="${m===n?'active':''}" data-month="${n}">${n}개월</button>`).join('')}</div><div class="month-detail"><div class="month-main"><h3>${m}개월 과일 가이드</h3><p>${e(f.tip)}</p><div class="fruit-pills">${f.names.map(n=>`<span class="fruit-pill"><span class="em">${FRUIT_EMOJI[n]||'🍎'}</span><span class="nm">${e(n)}</span></span>`).join('')}</div></div><div class="month-safety"><h3>꼭 확인해 주세요</h3><ul>${f.warnings.map(w=>`<li>${e(w)}</li>`).join('')}<li>과일별로 의학적으로 정해진 “첫 도입 개월”은 없습니다. 6개월 무렵 준비가 되면 적절한 질감으로 다양한 과일을 도입할 수 있어요.</li></ul><p class="source-note">참고: 싱가포르 HealthHub 이유식 가이드. 월별 구성은 식감과 발달을 이해하기 위한 예시이며 반드시 그 달에만 먹이는 목록은 아닙니다.</p><a class="go" href="https://www.healthhub.sg/well-being-and-lifestyle/pregnancy-and-infant-health/baby-getting-ready-for-solids" target="_blank" rel="noopener">싱가포르 공식 이유식 가이드 ↗</a></div></div></div>`;
+ const m=monthSelected,f=MONTHLY_FRUITS[m];
+ const months=Array.from({length:19},(_,i)=>i+6).map(n=>'<button type="button" class="'+(m===n?'active':'')+'" data-month="'+n+'">'+n+'개월</button>').join('');
+ const cards=f.names.map(n=>{const p=fruitInfo(n),icon=FRUIT_EMOJI[n]||'🍎';return '<article class="fruit-prep-card"><span class="fruit-em">'+icon+'</span><div><b>'+e(n)+'</b><p>'+e(p[0])+'</p><div class="fruit-risk">주의 · '+e(p[1])+'</div></div></article>'}).join('');
+ $('#fruits').innerHTML='<div style="grid-column:1/-1"><div class="monthbar">'+months+'</div><div class="month-detail"><div class="month-main"><h3>'+m+'개월 과일 가이드</h3><p>'+e(f.tip)+'</p><div class="fruit-prep-grid">'+cards+'</div><div class="fruit-main-note">특정 과일을 반드시 '+m+'개월에 시작해야 한다는 뜻은 아닙니다. 6개월 무렵 준비가 되면 다양한 과일을 발달에 맞는 질감으로 제공할 수 있습니다.</div></div><div class="month-safety"><h3>이번 월령에 특히 확인할 점</h3><ul>'+f.warnings.map(w=>'<li>'+e(w)+'</li>').join('')+'<li>아이는 앉은 자세에서 보호자가 지켜보는 가운데 먹어야 합니다.</li></ul><a class="go" href="https://www.healthhub.sg/well-being-and-lifestyle/pregnancy-and-infant-health/baby-getting-ready-for-solids" target="_blank" rel="noopener">싱가포르 공식 이유식 가이드 ↗</a> <a class="go" href="https://www.cdc.gov/infant-toddler-nutrition/foods-and-drinks/choking-hazards.html" target="_blank" rel="noopener">질식 위험 음식 가이드 ↗</a></div></div></div>';
  document.querySelectorAll('[data-month]').forEach(b=>b.onclick=()=>{monthSelected=Number(b.dataset.month);renderFruits()});
- $('#disclaimer').textContent='과일은 아이의 식사 준비 상태와 씹는 능력에 맞춰 부드러운 형태로 주세요. 질식 위험이 있는 모양은 피하세요.';
+ $('#disclaimer').textContent='과일별 손질·주의 정보는 일반적인 영유아 식품 안전 자료를 바탕으로 하며, 진료나 개별 알레르기 상담을 대신하지 않습니다.';
 }
+
 const PREP_GROUPS={
 '잠깐 외출':['기저귀 여분 3~5개','휴대용 물티슈','기저귀 갈이 패드','여벌 옷 1벌','손수건·거즈','분유/수유 준비물','젖병 또는 물컵','아기 간식 또는 이유식','방수 턱받이','지퍼백/쓰레기봉투','모자·유모차 선쉐이드','아기띠 또는 유모차','휴대용 체온계(필요 시)'],
 '비행기 탑승':['여권·입국 서류','항공권·체크인 정보','기내 반입용 기저귀·물티슈','여벌 옷(아기 + 보호자)','분유·젖병·수유용 물','필요한 이유식·간식','먹이는 동안 쓸 턱받이','쪽쪽이/치발기','작은 장난감·그림책','얇은 담요·수면조끼','지퍼백·오염물 봉투','상비약과 처방 자료','유모차 위탁/기내 반입 확인','카시트·공항 이동 수단 확인'],
@@ -121,7 +149,7 @@ function renderBenefit(){
 }
 const REC_CATEGORIES=[["grocery","장보기"],["gear","육아용품"],["outing","가볼만한 곳"],["clinic","병원·소아과"],["medicine","상비약"],["preschool","어린이집·교육"],["living","생활 정보"]];
 async function renderRecommendations(){
- const node=$('#recPanel');node.innerHTML='<div class="rec-layout"><div class="rec-formbox"><h3>💌 추천 글 남기기</h3><p>좋았던 제품이나 장소, 유용한 정보를 간단히 공유해 주세요.</p><form id="recForm"><label>카테고리<select name="category" required>'+REC_CATEGORIES.map(([v,n])=>'<option value="'+v+'">'+n+'</option>').join('')+'</select></label><label>제품 또는 장소 이름<input name="title" maxlength="90" required placeholder="예: Mustela 로션"></label><label>추천 링크 (선택)<input name="url" type="url" maxlength="600" placeholder="https://..."></label><label>추천하는 이유<textarea name="reason" rows="4" maxlength="400" minlength="8" required placeholder="어떤 점이 좋았는지 알려주세요"></textarea></label><input name="website" class="honeypot" tabindex="-1" autocomplete="off"><button type="submit">추천 글 올리기</button><p class="source-note">글은 공개될 수 있으니 이름, 연락처, 아이의 개인정보는 적지 마세요.</p><div id="recStatus" aria-live="polite"></div></form></div><div class="rec-listbox"><h3>함께 모은 추천</h3><div id="recItems">추천 글을 불러오는 중입니다…</div></div></div>';
+ const node=$('#recPanel');node.innerHTML='<div class="rec-layout"><div class="rec-formbox"><h3>💌 추천 글 남기기</h3><p>좋았던 제품이나 장소, 유용한 정보를 간단히 공유해 주세요.</p><form id="recForm"><label>카테고리<select name="category" required>'+REC_CATEGORIES.map(([v,n])=>'<option value="'+v+'">'+n+'</option>').join('')+'</select></label><label>닉네임<input name="nickname" maxlength="24" minlength="2" required placeholder="예: 토끼맘"></label><label>제품 또는 장소 이름<input name="title" maxlength="90" required placeholder="예: Mustela 로션"></label><label>추천 링크 (선택)<input name="url" type="url" maxlength="600" placeholder="https://..."></label><label>추천하는 이유<textarea name="reason" rows="4" maxlength="400" minlength="8" required placeholder="어떤 점이 좋았는지 알려주세요"></textarea></label><input name="website" class="honeypot" tabindex="-1" autocomplete="off"><button type="submit">추천 글 올리기</button><p class="source-note">글은 공개될 수 있으니 이름, 연락처, 아이의 개인정보는 적지 마세요.</p><div id="recStatus" aria-live="polite"></div></form></div><div class="rec-listbox"><h3>함께 모은 추천</h3><div id="recItems">추천 글을 불러오는 중입니다…</div></div></div>';
  const form=$('#recForm');form.onsubmit=async ev=>{ev.preventDefault();const btn=form.querySelector('button[type=submit]');btn.disabled=true;$('#recStatus').textContent='등록 중…';const data=Object.fromEntries(new FormData(form));try{const res=await fetch('/api/recommendations',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(data)});const j=await res.json();if(!res.ok)throw Error(j.error||'등록하지 못했습니다.');$('#recStatus').textContent='추천 글이 등록되었습니다.';form.reset();loadRecommendations()}catch(err){$('#recStatus').textContent=err.message}finally{btn.disabled=false}};
  loadRecommendations();
 }
