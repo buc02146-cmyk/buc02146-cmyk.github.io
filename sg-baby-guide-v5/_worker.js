@@ -356,10 +356,11 @@ export default {async fetch(req,env){
       const q=norm(url.searchParams.get("q"),65);
       if(q.length<2)return reply({items:[]});
       const pattern="%"+q.replace(/[\\%_]/g, v=>"\\"+v)+"%";
-      const rec=await env.DB.prepare("SELECT CASE WHEN listing_subcategory IS NULL THEN 'recommendation' ELSE 'listing' END AS kind,category,title,reason AS snippet,id FROM recommendations WHERE approved=1 AND (title LIKE ? ESCAPE '\\' OR reason LIKE ? ESCAPE '\\') ORDER BY created_at DESC LIMIT 6").bind(pattern,pattern).all();
-      const rev=await env.DB.prepare("SELECT 'review' AS kind,category,product_title AS title,body AS snippet,id FROM product_reviews WHERE approved=1 AND (product_title LIKE ? ESCAPE '\\' OR body LIKE ? ESCAPE '\\') ORDER BY created_at DESC LIMIT 6").bind(pattern,pattern).all();
-      const plays=await env.DB.prepare("SELECT 'playdate' AS kind,'playdate' AS category,place AS title,details AS snippet,id FROM playdates WHERE approved=1 AND (place LIKE ? ESCAPE '\\' OR details LIKE ? ESCAPE '\\') ORDER BY starts_at DESC LIMIT 5").bind(pattern,pattern).all();
-      return reply({items:[...(rec.results||[]),...(rev.results||[]),...(plays.results||[])]});
+      const categories={"clinic":["병원","소아과","병원 소아과","의료기관","clinic","hospital"],"grocery":["장보기","로컬 장보기","먹거리"],"gear":["육아용품","육아 용품"],"medicine":["약","상비약","약 상비약"],"outing":["나들이","키즈카페","가볼만한 곳","가볼 만한 곳","아이와 외출"],"preschool":["어린이집","교육","어린이집 교육"],"living":["생활 정보","싱가포르 생활"]};
+      const category=Object.keys(categories).find(key=>categories[key].includes(q.toLowerCase()))||null;
+      const rec=await env.DB.prepare("SELECT CASE WHEN listing_subcategory IS NULL THEN 'recommendation' ELSE 'listing' END AS kind,category,title,listing_subcategory AS snippet,id FROM recommendations WHERE approved=1 AND ((? IS NOT NULL AND category=?) OR (? IS NULL AND (title LIKE ? ESCAPE '\\' OR listing_subcategory LIKE ? ESCAPE '\\'))) ORDER BY created_at DESC LIMIT 6").bind(category,category,category,pattern,pattern).all();
+      const plays=category?null:await env.DB.prepare("SELECT 'playdate' AS kind,'playdate' AS category,place AS title,NULL AS snippet,id FROM playdates WHERE approved=1 AND place LIKE ? ESCAPE '\\' ORDER BY starts_at DESC LIMIT 5").bind(pattern).all();
+      return reply({items:[...(rec.results||[]),...(plays?.results||[])]});
     }
     if(summaryPath){
       if(req.method!=="GET")return reply({error:"허용되지 않은 요청입니다."},405);
@@ -372,10 +373,17 @@ export default {async fetch(req,env){
       const token=existingToken||crypto.randomUUID();
       const hash=await helpfulBrowserHash(token);
       await prepareHelpful(env.DB);
-      const listingFeed=url.searchParams.get("include")==="listings"?`
+      const includeListings=url.searchParams.get("include")==="listings";
+      const existingListingToken=includeListings?helpfulBrowserToken(req,listingHelpfulCookie):null;
+      const listingToken=includeListings?(existingListingToken||crypto.randomUUID()):null;
+      if(includeListings)await prepareListingHelpful(env.DB);
+      const listingFeed=includeListings?`
         UNION ALL
         SELECT r.id,r.nickname,r.reason AS body,NULL AS sentiment,r.created_at,r.category,r.title AS product_title,
-          r.photo_data IS NOT NULL AS has_photo,0 AS helpful_count,0 AS helped,'listing' AS kind,r.link_photo_url,r.url,r.link_photo_checked
+          r.photo_data IS NOT NULL AS has_photo,
+          (SELECT COUNT(*) FROM listing_helpful_votes v WHERE v.listing_id=r.id) AS helpful_count,
+          EXISTS(SELECT 1 FROM listing_helpful_votes v WHERE v.listing_id=r.id AND v.browser_hash=?) AS helped,
+          'listing' AS kind,r.link_photo_url,r.url,r.link_photo_checked
         FROM recommendations r WHERE r.approved=1 AND r.listing_subcategory IS NOT NULL
       `:"";
       const rows=await env.DB.prepare(`
@@ -387,10 +395,12 @@ export default {async fetch(req,env){
         FROM product_reviews r WHERE r.approved=1
         ${listingFeed}
         ORDER BY created_at DESC,id DESC LIMIT 6
-      `).bind(hash).all();
+      `).bind(hash,...(listingToken?[await helpfulBrowserHash(listingToken)]:[])).all();
       const items=rows.results||[];
       if(listingFeed)await fillLinkPhotos(env.DB,items);
       const headers=helpfulCookieHeaders(!existingToken&&items.some(item=>item.kind==="review")?token:null);
+      if(!existingListingToken&&listingToken&&items.some(item=>item.kind==="listing"))
+        headers.append("set-cookie",helpfulCookieHeaders(listingToken,listingHelpfulCookie).get("set-cookie"));
       return new Response(JSON.stringify({items}),{headers});
     }
     if(listingRatingsPath){
